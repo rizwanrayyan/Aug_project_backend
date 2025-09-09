@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import com.example.saveetha_ec.model.OrderAndIdMatching;
 import com.example.saveetha_ec.repository.OrderAndIdMatchingRepo;
 import com.razorpay.Order;
-import com.razorpay.Payment;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 
@@ -43,20 +42,5 @@ public Order buyGold(long userId,double amount,BigDecimal grams) throws Razorpay
 	orderAndIDRepo.save(orderIdAndUserID);
 	return order;
 }
-public void getPaymentId(String orderId) throws RazorpayException {
-	JSONObject paymentRequest = new JSONObject();
-	paymentRequest.put("amount", 0000); // in paise
-	paymentRequest.put("currency", "INR");
-	paymentRequest.put("order_id", "order_ABC123XYZ"); // your existing order
-	paymentRequest.put("method", "card"); // test mode
-	paymentRequest.put("card", new JSONObject()
-	        .put("number", "4111111111111111")
-	        .put("expiry_month", 12)
-	        .put("expiry_year", 34)
-	        .put("cvv", "123")
-	);
 
-	Payment payment = razorpay.payments.createJsonPayment(paymentRequest);
-	System.out.println("Payment ID: " + payment.get("id"));
-}
 }

@@ -1,7 +1,7 @@
 package com.example.saveetha_ec.controller;
 
 import java.math.BigDecimal;
-import java.util.Base64;
+
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -54,6 +54,7 @@ public String getOrderId(@RequestParam double amount,@RequestBody BuyGoldDTO buy
 public ResponseEntity<String> verifyPayment(@RequestHeader("X-Razorpay-Signature") String signature,
 		@RequestBody String payload){
 	try {
+		System.out.println("Webhook called !");
         if (verifySignature(payload, signature)) {
             System.out.println("Webhook Verified: " + payload);
             try {
@@ -111,13 +112,14 @@ private boolean verifySignature(String payload, String signature) throws Excepti
     SecretKeySpec secret_key = new SecretKeySpec(RAZORPAY_WEBHOOK_SECRET.getBytes(), "HmacSHA256");
     sha256_HMAC.init(secret_key);
     byte[] hash = sha256_HMAC.doFinal(payload.getBytes());
-    String generatedSignature = Base64.getEncoder().encodeToString(hash);
+    StringBuilder sb = new StringBuilder();
+    for (byte b : hash) {
+        sb.append(String.format("%02x", b));
+    }
+    String generatedSignature = sb.toString();
     return generatedSignature.equals(signature);
 }
 
-@PostMapping("/paymentid")
-public void paymentId(@RequestBody String orderId) throws RazorpayException {
-	digiGoldService.getPaymentId(orderId);
-}	
+	
 
 }
