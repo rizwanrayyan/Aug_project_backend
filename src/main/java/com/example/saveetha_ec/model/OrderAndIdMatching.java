@@ -110,5 +110,13 @@ public class OrderAndIdMatching {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
+	private Product productType;
+	public Product getProductType() {
+		return productType;
+	}
+
+	public void setProductType(Product productType) {
+		this.productType = productType;
+	}
 
 }

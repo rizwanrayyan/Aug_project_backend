@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.saveetha_ec.model.OrderAndIdMatching;
+import com.example.saveetha_ec.model.Product;
 import com.example.saveetha_ec.repository.OrderAndIdMatchingRepo;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
@@ -39,6 +40,7 @@ public Order buyGold(long userId,double amount,BigDecimal grams) throws Razorpay
      orderIdAndUserID.setPaymentId("PENDING");
 	Order order=razorpay.orders.create(orderRequest);
 	orderIdAndUserID.setRazorpayOrderId(order.get("id"));
+	orderIdAndUserID.setProductType(Product.DIGITAL_GOLD);
 	orderAndIDRepo.save(orderIdAndUserID);
 	return order;
 }
