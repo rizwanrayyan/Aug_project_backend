@@ -1,6 +1,7 @@
 package com.example.saveetha_ec.controller;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.saveetha_ec.model.BuyGoldDTO;
 
 import com.example.saveetha_ec.model.OrderAndIdMatching;
+import com.example.saveetha_ec.model.StatusEnum;
 import com.example.saveetha_ec.model.TokenGold;
 import com.example.saveetha_ec.repository.OrderAndIdMatchingRepo;
 import com.example.saveetha_ec.repository.TokenGoldRepository;
@@ -29,6 +31,12 @@ import com.razorpay.RazorpayException;
 
 import jakarta.transaction.Transactional;
 
+import com.example.saveetha_ec.service.BlockchainService;
+import org.web3j.utils.Numeric;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
 @RestController
 @RequestMapping("api/token")
 public class TokenGoldController {
@@ -38,6 +46,8 @@ public class TokenGoldController {
 	private OrderAndIdMatchingRepo orderAndIDRepo;
 	@Autowired
 	private TokenGoldRepository tokenGoldRepo;
+    @Autowired
+    private BlockchainService blockchainService;
 	
 	private final String RAZORPAY_WEBHOOK_SECRET="Rizwan@6666";
 @PostMapping("/buy")
@@ -50,63 +60,65 @@ public ResponseEntity<?> buyTokenGold(@RequestParam double amount,@RequestBody B
 	}
 @PostMapping("/verify")
 @Transactional
-public ResponseEntity<String> verifyPayment(@RequestHeader("X-Razorpay-Signature") String signature,
-		@RequestBody String payload){
-	try {
-		System.out.println("Webhook called !");
-        if (verifySignature(payload, signature)) {
-            System.out.println("Webhook Verified: " + payload);
-            try {
+    public ResponseEntity<String> verifyPayment(@RequestHeader("X-Razorpay-Signature") String signature,
+                                                @RequestBody String payload) {
+        try {
+            if (verifySignature(payload, signature)) {
+                System.out.println("Webhook Verified: " + payload);
+                
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode rootNode = mapper.readTree(payload);
-                String orderId = rootNode
-                        .path("payload")
-                        .path("payment")
-                        .path("entity")
-                        .path("order_id")
-                        .asText();
+                String orderId = rootNode.path("payload").path("payment").path("entity").path("order_id").asText();
+                String paymentId = rootNode.path("payload").path("payment").path("entity").path("id").asText();
 
-                // now you have orderId
-                System.out.println("Order ID from webhook: " + orderId);
-                OrderAndIdMatching orderAndIDMatch=new OrderAndIdMatching();
-                orderAndIDMatch=orderAndIDRepo.findByRazorpayOrderId(orderId);
-                long userId=orderAndIDMatch.getUserId();
-                String paymentId = rootNode
-                        .path("payload")
-                        .path("payment")
-                        .path("entity")
-                        .path("id")
-                        .asText();
-                if("PENDING".equals(orderAndIDMatch.getStatus())){
-                orderAndIDMatch.setStatus("CAPTURED");
-                orderAndIDMatch.setPaymentId(paymentId);
-                orderAndIDRepo.save(orderAndIDMatch);
+                OrderAndIdMatching orderAndIDMatch = orderAndIDRepo.findByRazorpayOrderId(orderId);
+                if (orderAndIDMatch == null) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Order not found");
                 }
-                TokenGold tokenGold=new TokenGold();
-                tokenGold.setUserId(userId);
-                tokenGold.setGrams_purchased(orderAndIDMatch.getGrams());
-                tokenGold.setGrams_remaining(orderAndIDMatch.getGrams());
-                tokenGold.setPurchase_rate(orderAndIDMatch.getAmount());
-                tokenGold.setVaultId("VAULT0001");
-                tokenGoldRepo.save(tokenGold);
-                
 
+                // --- Start of Blockchain Integration ---
+                if ("PENDING".equals(orderAndIDMatch.getStatus())) {
+                    orderAndIDMatch.setStatus("CAPTURED");
+                    orderAndIDMatch.setPaymentId(paymentId);
+                    orderAndIDRepo.save(orderAndIDMatch);
+
+                    // 1. Prepare data for minting
+                    long userId = orderAndIDMatch.getUserId();
+                    BigDecimal grams = orderAndIDMatch.getGrams();
+                    BigInteger amountWithDecimals = grams.multiply(new BigDecimal("1E18")).toBigInteger();
+                    
+                    // 2. Create a unique data hash for the transaction
+                    String hashInput = orderId + ":" + paymentId;
+                    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                    byte[] dataHash = digest.digest(hashInput.getBytes(StandardCharsets.UTF_8));
+
+                    // 3. Call the blockchain service to mint tokens
+                    String txHash = blockchainService.mintTokens(userId, amountWithDecimals, dataHash);
+                    System.out.println("Minted tokens on-chain. Transaction Hash: " + txHash);
+
+                    // 4. Save the token details with the transaction hash to your DB
+                    TokenGold tokenGold = new TokenGold();
+                    tokenGold.setUserId(userId);
+                    tokenGold.setGrams_purchased(grams);
+                    tokenGold.setGrams_remaining(grams);
+                    tokenGold.setPurchase_rate(orderAndIDMatch.getAmount());
+                    tokenGold.setTransaction_hash(txHash); // Save the blockchain hash
+                    tokenGold.setVaultId("VAULT0001"); // Example vault ID
+                    tokenGold.setStatus(StatusEnum.ACTIVE);
+                    tokenGoldRepo.save(tokenGold);
+                }
+                // --- End of Blockchain Integration ---
+
+                return ResponseEntity.ok("Webhook received and processed successfully.");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid signature");
             }
-            catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error parsing webhook");
-            }
-            // TODO: Handle event, update DB for order/payment status
-            
-            return ResponseEntity.ok("Webhook received successfully");
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid signature");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing webhook: " + e.getMessage());
         }
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error");
     }
 
-	
-}
 @Transactional
 private boolean verifySignature(String payload, String signature) throws Exception {
     Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
