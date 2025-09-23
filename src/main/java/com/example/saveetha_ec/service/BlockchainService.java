@@ -1,10 +1,7 @@
 package com.example.saveetha_ec.service;
 
-import com.example.saveetha_ec.DigitalGoldToken;
-import com.example.saveetha_ec.model.UserDetail;
-import com.example.saveetha_ec.repository.UserRepository;
+import java.math.BigInteger;
 
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
@@ -12,7 +9,11 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.gas.DefaultGasProvider;
 
-import java.math.BigInteger;
+import com.example.saveetha_ec.contracts.DigitalGoldToken;
+import com.example.saveetha_ec.model.UserDetail;
+import com.example.saveetha_ec.repository.UserRepository;
+
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class BlockchainService {

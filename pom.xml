@@ -38,7 +38,7 @@
 		<dependency>
             <groupId>org.web3j</groupId>
             <artifactId>core</artifactId>
-            <version>4.10.3</version>
+            <version>4.14.0</version>
         </dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -111,6 +111,36 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.web3j</groupId>
+				<artifactId>web3j-maven-plugin</artifactId>
+				<version>4.14.0</version>
+				<executions>
+					<execution>
+						<id>generate-contract-wrappers</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate-sources</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<packageName>com.example.saveetha_ec.contracts</packageName>
+					<sourceDestination>src/main/java</sourceDestination>
+					
+					<abiSourceFiles>
+						<directory>${project.basedir}/src/main/resources</directory>
+						<includes>
+							<include>*.abi</include>
+						</includes>
+					</abiSourceFiles>
+					
+					<aliases>
+						<DigitalGoldToken>DigitalGoldToken</DigitalGoldToken>
+					</aliases>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
