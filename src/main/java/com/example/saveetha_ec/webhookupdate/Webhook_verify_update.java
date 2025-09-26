@@ -35,7 +35,7 @@ import jakarta.transaction.Transactional;
 @RestController
 @RequestMapping("/api/webhook")
 public class Webhook_verify_update {
-	
+
 
 	@Autowired
 	private OrderAndIdMatchingRepo orderAndIDRepo;
@@ -45,10 +45,10 @@ public class Webhook_verify_update {
     private BlockchainService blockchainService;
     @Autowired
     private DigiGoldWalletRepo digiGoldRepo;
-	
+
 	private final String RAZORPAY_WEBHOOK_SECRET="Rizwan@6666";
 
-@PostMapping("/verify")
+@PostMapping("/veri")
 @Transactional
     public ResponseEntity<String> verifyPayment(@RequestHeader("X-Razorpay-Signature") String signature,
                                                 @RequestBody String payload) {
@@ -56,14 +56,14 @@ public class Webhook_verify_update {
         	System.out.println("getting into webhook verify");
             if (verifySignature(payload, signature)) {
                 System.out.println("Webhook Verified: " + payload);
-                
+
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode rootNode = mapper.readTree(payload);
                 String orderId = rootNode.path("payload").path("payment").path("entity").path("order_id").asText();
                 String paymentId = rootNode.path("payload").path("payment").path("entity").path("id").asText();
 
                 OrderAndIdMatching orderAndIDMatch = orderAndIDRepo.findByRazorpayOrderId(orderId);
-                
+
                 if (orderAndIDMatch == null) {
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Order not found");
                 }
@@ -79,13 +79,14 @@ public class Webhook_verify_update {
                     long userId = orderAndIDMatch.getUserId();
                     BigDecimal grams = orderAndIDMatch.getGrams();
                     BigInteger amountWithDecimals = grams.multiply(new BigDecimal("1E18")).toBigInteger();
-                    
+
                     // 2. Create a unique data hash for the transaction
                     String hashInput = orderId + ":" + paymentId;
                     MessageDigest digest = MessageDigest.getInstance("SHA-256");
                     byte[] dataHash = digest.digest(hashInput.getBytes(StandardCharsets.UTF_8));
 
                     // 3. Call the blockchain service to mint tokens
+                    System.out.println("going to call blockchain service");
                     String txHash = blockchainService.mintTokens(userId, amountWithDecimals, dataHash);
                     System.out.println("Minted tokens on-chain. Transaction Hash: " + txHash);
 
@@ -111,13 +112,13 @@ public class Webhook_verify_update {
                     wallet.setGold(wallet.getGold().add(orderAndIDMatch.getGrams()));
                     digiGoldRepo.save(wallet);
                 }
-                
+
                 // --- End of Blockchain Integration ---
 
                 return ResponseEntity.ok("Webhook received and processed successfully.");
-                
-            } 
-            
+
+            }
+
             else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid signature");
             }

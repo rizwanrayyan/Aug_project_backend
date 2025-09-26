@@ -34,7 +34,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  * <p>Auto generated code.
  * <p><strong>Do not modify!</strong>
  * <p>Please use the <a href="https://docs.web3j.io/command_line.html">web3j command line tools</a>,
- * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the 
+ * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the
  * <a href="https://github.com/LFDT-web3j/web3j/tree/main/codegen">codegen module</a> to update.
  *
  * <p>Generated with web3j version 4.14.0.
@@ -89,71 +89,71 @@ public class DigitalGoldToken extends Contract {
 
     public static final String FUNC_TOTALSUPPLY = "totalSupply";
 
-    public static final CustomError ACCESSCONTROLBADCONFIRMATION_ERROR = new CustomError("AccessControlBadConfirmation", 
+    public static final CustomError ACCESSCONTROLBADCONFIRMATION_ERROR = new CustomError("AccessControlBadConfirmation",
             Arrays.<TypeReference<?>>asList());
     ;
 
-    public static final CustomError ACCESSCONTROLUNAUTHORIZEDACCOUNT_ERROR = new CustomError("AccessControlUnauthorizedAccount", 
+    public static final CustomError ACCESSCONTROLUNAUTHORIZEDACCOUNT_ERROR = new CustomError("AccessControlUnauthorizedAccount",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Bytes32>() {}));
     ;
 
-    public static final CustomError ERC20INSUFFICIENTALLOWANCE_ERROR = new CustomError("ERC20InsufficientAllowance", 
+    public static final CustomError ERC20INSUFFICIENTALLOWANCE_ERROR = new CustomError("ERC20InsufficientAllowance",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}));
     ;
 
-    public static final CustomError ERC20INSUFFICIENTBALANCE_ERROR = new CustomError("ERC20InsufficientBalance", 
+    public static final CustomError ERC20INSUFFICIENTBALANCE_ERROR = new CustomError("ERC20InsufficientBalance",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}));
     ;
 
-    public static final CustomError ERC20INVALIDAPPROVER_ERROR = new CustomError("ERC20InvalidApprover", 
+    public static final CustomError ERC20INVALIDAPPROVER_ERROR = new CustomError("ERC20InvalidApprover",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
     ;
 
-    public static final CustomError ERC20INVALIDRECEIVER_ERROR = new CustomError("ERC20InvalidReceiver", 
+    public static final CustomError ERC20INVALIDRECEIVER_ERROR = new CustomError("ERC20InvalidReceiver",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
     ;
 
-    public static final CustomError ERC20INVALIDSENDER_ERROR = new CustomError("ERC20InvalidSender", 
+    public static final CustomError ERC20INVALIDSENDER_ERROR = new CustomError("ERC20InvalidSender",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
     ;
 
-    public static final CustomError ERC20INVALIDSPENDER_ERROR = new CustomError("ERC20InvalidSpender", 
+    public static final CustomError ERC20INVALIDSPENDER_ERROR = new CustomError("ERC20InvalidSpender",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
     ;
 
-    public static final Event APPROVAL_EVENT = new Event("Approval", 
+    public static final Event APPROVAL_EVENT = new Event("Approval",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {}, new TypeReference<Address>(true) {}, new TypeReference<Uint256>() {}));
     ;
 
-    public static final Event GOLDPURCHASED_EVENT = new Event("GoldPurchased", 
+    public static final Event GOLDPURCHASED_EVENT = new Event("GoldPurchased",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {}, new TypeReference<Uint256>() {}, new TypeReference<Bytes32>() {}));
     ;
 
-    public static final Event GOLDREDEEMED_EVENT = new Event("GoldRedeemed", 
+    public static final Event GOLDREDEEMED_EVENT = new Event("GoldRedeemed",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {}, new TypeReference<Uint256>() {}, new TypeReference<Bytes32>() {}));
     ;
 
-    public static final Event PAUSED_EVENT = new Event("Paused", 
+    public static final Event PAUSED_EVENT = new Event("Paused",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
     ;
 
-    public static final Event ROLEADMINCHANGED_EVENT = new Event("RoleAdminChanged", 
+    public static final Event ROLEADMINCHANGED_EVENT = new Event("RoleAdminChanged",
             Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>(true) {}, new TypeReference<Bytes32>(true) {}, new TypeReference<Bytes32>(true) {}));
     ;
 
-    public static final Event ROLEGRANTED_EVENT = new Event("RoleGranted", 
+    public static final Event ROLEGRANTED_EVENT = new Event("RoleGranted",
             Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>(true) {}, new TypeReference<Address>(true) {}, new TypeReference<Address>(true) {}));
     ;
 
-    public static final Event ROLEREVOKED_EVENT = new Event("RoleRevoked", 
+    public static final Event ROLEREVOKED_EVENT = new Event("RoleRevoked",
             Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>(true) {}, new TypeReference<Address>(true) {}, new TypeReference<Address>(true) {}));
     ;
 
-    public static final Event TRANSFER_EVENT = new Event("Transfer", 
+    public static final Event TRANSFER_EVENT = new Event("Transfer",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {}, new TypeReference<Address>(true) {}, new TypeReference<Uint256>() {}));
     ;
 
-    public static final Event UNPAUSED_EVENT = new Event("Unpaused", 
+    public static final Event UNPAUSED_EVENT = new Event("Unpaused",
             Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
     ;
 
@@ -179,11 +179,17 @@ public class DigitalGoldToken extends Contract {
         super(BINARY, contractAddress, web3j, transactionManager, contractGasProvider);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> approve(String spender, BigInteger value) {
+    public DigitalGoldToken(String contractAddress, Web3j web3j, Credentials credentials,
+			TransactionManager transactionManager, ContractGasProvider contractGasProvider) {
+		// TODO Auto-generated constructor stub
+    	 super(BINARY, contractAddress, web3j, transactionManager, contractGasProvider);
+	}
+
+	public RemoteFunctionCall<TransactionReceipt> approve(String spender, BigInteger value) {
         final Function function = new Function(
-                FUNC_APPROVE, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, spender), 
-                new org.web3j.abi.datatypes.generated.Uint256(value)), 
+                FUNC_APPROVE,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, spender),
+                new org.web3j.abi.datatypes.generated.Uint256(value)),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
@@ -298,17 +304,17 @@ public class DigitalGoldToken extends Contract {
 
     public RemoteFunctionCall<TransactionReceipt> grantRole(byte[] role, String account) {
         final Function function = new Function(
-                FUNC_GRANTROLE, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role), 
-                new org.web3j.abi.datatypes.Address(160, account)), 
+                FUNC_GRANTROLE,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role),
+                new org.web3j.abi.datatypes.Address(160, account)),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
     public RemoteFunctionCall<TransactionReceipt> pause() {
         final Function function = new Function(
-                FUNC_PAUSE, 
-                Arrays.<Type>asList(), 
+                FUNC_PAUSE,
+                Arrays.<Type>asList(),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
@@ -347,19 +353,19 @@ public class DigitalGoldToken extends Contract {
     public RemoteFunctionCall<TransactionReceipt> purchaseGold(String to, BigInteger amount,
             byte[] dataHash) {
         final Function function = new Function(
-                FUNC_PURCHASEGOLD, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, to), 
-                new org.web3j.abi.datatypes.generated.Uint256(amount), 
-                new org.web3j.abi.datatypes.generated.Bytes32(dataHash)), 
+                FUNC_PURCHASEGOLD,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, to),
+                new org.web3j.abi.datatypes.generated.Uint256(amount),
+                new org.web3j.abi.datatypes.generated.Bytes32(dataHash)),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
     public RemoteFunctionCall<TransactionReceipt> redeemGold(BigInteger amount, byte[] dataHash) {
         final Function function = new Function(
-                FUNC_REDEEMGOLD, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(amount), 
-                new org.web3j.abi.datatypes.generated.Bytes32(dataHash)), 
+                FUNC_REDEEMGOLD,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(amount),
+                new org.web3j.abi.datatypes.generated.Bytes32(dataHash)),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
@@ -367,18 +373,18 @@ public class DigitalGoldToken extends Contract {
     public RemoteFunctionCall<TransactionReceipt> renounceRole(byte[] role,
             String callerConfirmation) {
         final Function function = new Function(
-                FUNC_RENOUNCEROLE, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role), 
-                new org.web3j.abi.datatypes.Address(160, callerConfirmation)), 
+                FUNC_RENOUNCEROLE,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role),
+                new org.web3j.abi.datatypes.Address(160, callerConfirmation)),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
     public RemoteFunctionCall<TransactionReceipt> revokeRole(byte[] role, String account) {
         final Function function = new Function(
-                FUNC_REVOKEROLE, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role), 
-                new org.web3j.abi.datatypes.Address(160, account)), 
+                FUNC_REVOKEROLE,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role),
+                new org.web3j.abi.datatypes.Address(160, account)),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
@@ -493,9 +499,9 @@ public class DigitalGoldToken extends Contract {
 
     public RemoteFunctionCall<TransactionReceipt> transfer(String to, BigInteger value) {
         final Function function = new Function(
-                FUNC_TRANSFER, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, to), 
-                new org.web3j.abi.datatypes.generated.Uint256(value)), 
+                FUNC_TRANSFER,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, to),
+                new org.web3j.abi.datatypes.generated.Uint256(value)),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
@@ -539,18 +545,18 @@ public class DigitalGoldToken extends Contract {
     public RemoteFunctionCall<TransactionReceipt> transferFrom(String from, String to,
             BigInteger value) {
         final Function function = new Function(
-                FUNC_TRANSFERFROM, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, from), 
-                new org.web3j.abi.datatypes.Address(160, to), 
-                new org.web3j.abi.datatypes.generated.Uint256(value)), 
+                FUNC_TRANSFERFROM,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, from),
+                new org.web3j.abi.datatypes.Address(160, to),
+                new org.web3j.abi.datatypes.generated.Uint256(value)),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
     public RemoteFunctionCall<TransactionReceipt> unpause() {
         final Function function = new Function(
-                FUNC_UNPAUSE, 
-                Arrays.<Type>asList(), 
+                FUNC_UNPAUSE,
+                Arrays.<Type>asList(),
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
@@ -588,94 +594,94 @@ public class DigitalGoldToken extends Contract {
     }
 
     public RemoteFunctionCall<BigInteger> allowance(String owner, String spender) {
-        final Function function = new Function(FUNC_ALLOWANCE, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, owner), 
-                new org.web3j.abi.datatypes.Address(160, spender)), 
+        final Function function = new Function(FUNC_ALLOWANCE,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, owner),
+                new org.web3j.abi.datatypes.Address(160, spender)),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
     public RemoteFunctionCall<BigInteger> balanceOf(String account) {
-        final Function function = new Function(FUNC_BALANCEOF, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, account)), 
+        final Function function = new Function(FUNC_BALANCEOF,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, account)),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
     public RemoteFunctionCall<BigInteger> decimals() {
-        final Function function = new Function(FUNC_DECIMALS, 
-                Arrays.<Type>asList(), 
+        final Function function = new Function(FUNC_DECIMALS,
+                Arrays.<Type>asList(),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint8>() {}));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
     public RemoteFunctionCall<byte[]> DEFAULT_ADMIN_ROLE() {
-        final Function function = new Function(FUNC_DEFAULT_ADMIN_ROLE, 
-                Arrays.<Type>asList(), 
+        final Function function = new Function(FUNC_DEFAULT_ADMIN_ROLE,
+                Arrays.<Type>asList(),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>() {}));
         return executeRemoteCallSingleValueReturn(function, byte[].class);
     }
 
     public RemoteFunctionCall<byte[]> getRoleAdmin(byte[] role) {
-        final Function function = new Function(FUNC_GETROLEADMIN, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role)), 
+        final Function function = new Function(FUNC_GETROLEADMIN,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role)),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>() {}));
         return executeRemoteCallSingleValueReturn(function, byte[].class);
     }
 
     public RemoteFunctionCall<Boolean> hasRole(byte[] role, String account) {
-        final Function function = new Function(FUNC_HASROLE, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role), 
-                new org.web3j.abi.datatypes.Address(160, account)), 
+        final Function function = new Function(FUNC_HASROLE,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role),
+                new org.web3j.abi.datatypes.Address(160, account)),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
     public RemoteFunctionCall<byte[]> MINTER_ROLE() {
-        final Function function = new Function(FUNC_MINTER_ROLE, 
-                Arrays.<Type>asList(), 
+        final Function function = new Function(FUNC_MINTER_ROLE,
+                Arrays.<Type>asList(),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>() {}));
         return executeRemoteCallSingleValueReturn(function, byte[].class);
     }
 
     public RemoteFunctionCall<String> name() {
-        final Function function = new Function(FUNC_NAME, 
-                Arrays.<Type>asList(), 
+        final Function function = new Function(FUNC_NAME,
+                Arrays.<Type>asList(),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Utf8String>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<Boolean> paused() {
-        final Function function = new Function(FUNC_PAUSED, 
-                Arrays.<Type>asList(), 
+        final Function function = new Function(FUNC_PAUSED,
+                Arrays.<Type>asList(),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
     public RemoteFunctionCall<byte[]> REDEEMER_ROLE() {
-        final Function function = new Function(FUNC_REDEEMER_ROLE, 
-                Arrays.<Type>asList(), 
+        final Function function = new Function(FUNC_REDEEMER_ROLE,
+                Arrays.<Type>asList(),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>() {}));
         return executeRemoteCallSingleValueReturn(function, byte[].class);
     }
 
     public RemoteFunctionCall<Boolean> supportsInterface(byte[] interfaceId) {
-        final Function function = new Function(FUNC_SUPPORTSINTERFACE, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes4(interfaceId)), 
+        final Function function = new Function(FUNC_SUPPORTSINTERFACE,
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes4(interfaceId)),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
     public RemoteFunctionCall<String> symbol() {
-        final Function function = new Function(FUNC_SYMBOL, 
-                Arrays.<Type>asList(), 
+        final Function function = new Function(FUNC_SYMBOL,
+                Arrays.<Type>asList(),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Utf8String>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<BigInteger> totalSupply() {
-        final Function function = new Function(FUNC_TOTALSUPPLY, 
-                Arrays.<Type>asList(), 
+        final Function function = new Function(FUNC_TOTALSUPPLY,
+                Arrays.<Type>asList(),
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
@@ -693,8 +699,8 @@ public class DigitalGoldToken extends Contract {
     }
 
     public static DigitalGoldToken load(String contractAddress, Web3j web3j,
-            Credentials credentials, ContractGasProvider contractGasProvider) {
-        return new DigitalGoldToken(contractAddress, web3j, credentials, contractGasProvider);
+            Credentials credentials,TransactionManager transactionManager, ContractGasProvider contractGasProvider) {
+        return new DigitalGoldToken(contractAddress, web3j, credentials,transactionManager, contractGasProvider);
     }
 
     public static DigitalGoldToken load(String contractAddress, Web3j web3j,
