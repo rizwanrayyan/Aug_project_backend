@@ -38,16 +38,18 @@ public class SecurityConfig {
 				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.authorizeHttpRequests(request->request
 				.requestMatchers("/api/user/**").permitAll()
-				 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
+				 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 				.requestMatchers("/api/verify/send").permitAll()
 				.requestMatchers("/api/verify/verify").permitAll()
 				.requestMatchers("/api/gold/verify").permitAll()
 				.requestMatchers("/api/gold/buy").permitAll()
+				.requestMatchers("/api/webhook/ver").permitAll()
 				.requestMatchers("/api/verify/**").hasAuthority("ROLE_USER")
+				.requestMatchers("/api/token/**").hasAuthority("ROLE_USER")
 				.requestMatchers("/api/goldprice/**").hasAuthority("ROLE_USER")
 				)
 				.sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authenticationProvider(authenticationProvider()) 
+				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class).
 				build();
 	}
@@ -63,7 +65,7 @@ public class SecurityConfig {
 	public AuthenticationManager manager(AuthenticationConfiguration config) throws Exception {
 		return config.getAuthenticationManager();
 	}
-	
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
