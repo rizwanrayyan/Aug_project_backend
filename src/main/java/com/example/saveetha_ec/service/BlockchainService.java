@@ -1,10 +1,8 @@
 package com.example.saveetha_ec.service;
 
-import com.example.saveetha_ec.contracts.DigitalGoldToken;
-import com.example.saveetha_ec.model.UserDetail;
-import com.example.saveetha_ec.repository.UserRepository;
-import jakarta.annotation.PostConstruct;
-import okhttp3.OkHttpClient;
+import java.math.BigInteger;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
@@ -16,9 +14,12 @@ import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.StaticEIP1559GasProvider;
 import org.web3j.utils.Convert;
 
+import com.example.saveetha_ec.contracts.DigitalGoldToken;
+import com.example.saveetha_ec.model.UserDetail;
+import com.example.saveetha_ec.repository.UserRepository;
 
-import java.math.BigInteger;
-import java.util.concurrent.TimeUnit;
+import jakarta.annotation.PostConstruct;
+import okhttp3.OkHttpClient;
 
 @Service
 public class BlockchainService {
@@ -34,7 +35,8 @@ public class BlockchainService {
 
     private Web3j web3j;
     private Credentials credentials;
-    // We remove the contract and txManager from class-level fields to create them dynamically
+    // We remove the contract and txManager from class-level fields
+    // to create them dynamically for each transaction, ensuring nonce is always fresh.
 
     private final UserRepository userRepository;
 
@@ -44,6 +46,7 @@ public class BlockchainService {
 
     @PostConstruct
     public void init() {
+        // A client with a long timeout is crucial for waiting for transaction confirmation
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(60, TimeUnit.SECONDS)
                 .readTimeout(180, TimeUnit.SECONDS)
@@ -66,33 +69,35 @@ public class BlockchainService {
 
         // --- THE FIX: DYNAMIC NONCE AND TRANSACTION MANAGER ---
 
-        // 1. Get the latest transaction count (nonce) from the network for our backend wallet.
-        // We use 'PENDING' to include transactions that are still in the mempool.
+        // 1. Get the latest transaction count (nonce) right before sending.
+        // We use 'PENDING' to ensure we don't conflict with transactions still in the mempool.
         BigInteger nonce = web3j.ethGetTransactionCount(credentials.getAddress(), DefaultBlockParameterName.PENDING).send().getTransactionCount();
-        System.out.println("Using nonce: " + nonce);
+        System.out.println("Using fresh nonce: " + nonce);
 
         long chainId = 80002; // Polygon Amoy testnet chain ID
 
         // 2. Create a new Transaction Manager for THIS transaction with the correct nonce.
         RawTransactionManager txManager = new RawTransactionManager(web3j, credentials, chainId);
 
-        // 3. Define robust EIP-1559 gas fees.
-        BigInteger gasLimit = BigInteger.valueOf(500_000L); // A safe limit for this function
+        // 3. Define robust EIP-1559 gas fees to ensure the transaction is picked up by miners.
+        BigInteger gasLimit = BigInteger.valueOf(500_000L); // A safe gas limit for your function
         BigInteger maxFeePerGas = Convert.toWei("150", Convert.Unit.GWEI).toBigInteger();
-        BigInteger maxPriorityFeePerGas = Convert.toWei("30", Convert.Unit.GWEI).toBigInteger();
+        BigInteger maxPriorityFeePerGas = Convert.toWei("30", Convert.Unit.GWEI).toBigInteger(); // A good tip for the miner
         ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, maxFeePerGas, maxPriorityFeePerGas, gasLimit);
-
+        
         // 4. Load the contract instance using our new, single-use transaction manager.
         DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider);
+        
+        System.out.println("Attempting to mint " + Convert.fromWei(amount.toString(), Convert.Unit.ETHER) + " tokens for " + toAddress);
 
         // 5. Send the transaction.
         var transactionReceipt = contract.purchaseGold(toAddress, amount, dataHash).send();
 
         if (!transactionReceipt.isStatusOK()) {
-            throw new RuntimeException("Minting transaction failed. Status: " + transactionReceipt.getStatus()
+            throw new RuntimeException("Minting transaction failed on-chain. Status: " + transactionReceipt.getStatus() 
                 + ". Revert reason: " + transactionReceipt.getRevertReason());
         }
-
+        
         System.out.println("✅ Transaction successful! Hash: " + transactionReceipt.getTransactionHash());
         return transactionReceipt.getTransactionHash();
     }
