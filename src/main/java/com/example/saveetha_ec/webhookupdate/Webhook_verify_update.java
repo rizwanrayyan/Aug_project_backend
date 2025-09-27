@@ -48,7 +48,7 @@ public class Webhook_verify_update {
 
 	private final String RAZORPAY_WEBHOOK_SECRET="Rizwan@6666";
 
-@PostMapping("/veri")
+@PostMapping("/ver")
 @Transactional
     public ResponseEntity<String> verifyPayment(@RequestHeader("X-Razorpay-Signature") String signature,
                                                 @RequestBody String payload) {
