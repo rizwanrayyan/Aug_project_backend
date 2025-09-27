@@ -81,7 +81,9 @@ public class Webhook_verify_update {
                     BigInteger amountWithDecimals = grams.multiply(new BigDecimal("1E18")).toBigInteger();
 
                     // 2. Create a unique data hash for the transaction
-                    String hashInput = orderId + ":" + paymentId;
+                    double rateOfPurchase=orderAndIDMatch.getAmount();
+                    var dateOfAcquisation=orderAndIDMatch.getCreatedAt();
+                    String hashInput =""+ grams +rateOfPurchase+dateOfAcquisation;
                     MessageDigest digest = MessageDigest.getInstance("SHA-256");
                     byte[] dataHash = digest.digest(hashInput.getBytes(StandardCharsets.UTF_8));
 
@@ -99,6 +101,7 @@ public class Webhook_verify_update {
                     tokenGold.setTransaction_hash(txHash); // Save the blockchain hash
                     tokenGold.setVaultId("VAULT0001"); // Example vault ID
                     tokenGold.setStatus(StatusEnum.ACTIVE);
+                    tokenGold.setDateOfAcquisation(dateOfAcquisation);
                     tokenGoldRepo.save(tokenGold);
                 }
                 else if("PENDING".equals(orderAndIDMatch.getStatus()) && type.equals(Product.DIGITAL_GOLD)) {
