@@ -101,4 +101,41 @@ public class BlockchainService {
         System.out.println("✅ Transaction successful! Hash: " + transactionReceipt.getTransactionHash());
         return transactionReceipt.getTransactionHash();
     }
+
+    public String redeemTokens(Long userId, BigInteger amount, byte[] dataHash) throws Exception {
+        UserDetail user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found for ID: " + userId));
+
+        String userAddress = user.getWalletAddress();
+        if (userAddress == null || userAddress.isBlank()) {
+            throw new IllegalStateException("User " + userId + " does not have a wallet address set.");
+        }
+
+        // --- DYNAMIC NONCE AND TRANSACTION MANAGER FOR REDEMPTION ---
+        BigInteger nonce = web3j.ethGetTransactionCount(credentials.getAddress(), DefaultBlockParameterName.PENDING).send().getTransactionCount();
+        System.out.println("Using fresh nonce for redemption: " + nonce);
+
+        long chainId = 80002; // Polygon Amoy
+        RawTransactionManager txManager = new RawTransactionManager(web3j, credentials, chainId);
+        
+        BigInteger gasLimit = BigInteger.valueOf(500_000L);
+        BigInteger maxFeePerGas = Convert.toWei("150", Convert.Unit.GWEI).toBigInteger();
+        BigInteger maxPriorityFeePerGas = Convert.toWei("30", Convert.Unit.GWEI).toBigInteger();
+        ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, maxFeePerGas, maxPriorityFeePerGas, gasLimit);
+        
+        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider);
+        
+        System.out.println("Attempting to redeem " + Convert.fromWei(amount.toString(), Convert.Unit.ETHER) + " tokens from " + userAddress);
+
+        // This calls the 'redeemGold(address user, ...)' function on your optimized contract
+        var transactionReceipt = contract.redeemGold(userAddress, amount, dataHash).send();
+
+        if (!transactionReceipt.isStatusOK()) {
+            throw new RuntimeException("Redemption transaction failed on-chain. Status: " + transactionReceipt.getStatus() 
+                + ". Revert reason: " + transactionReceipt.getRevertReason());
+        }
+
+        System.out.println("✅ Redemption successful! Hash: " + transactionReceipt.getTransactionHash());
+        return transactionReceipt.getTransactionHash();
+    }
 }
