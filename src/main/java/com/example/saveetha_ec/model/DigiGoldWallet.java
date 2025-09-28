@@ -1,52 +1,94 @@
 package com.example.saveetha_ec.model;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
 
 @Entity
-@Table(name="digi_gold_wallet")
+@Table(name = "digital_gold_wallet")
 public class DigiGoldWallet {
 
     @Id
-    private long id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
-    @Column(nullable = false, length = 10)
-    private String units = "GRAMS";  // default is GRAMS
+    private Long userId;
 
-    @Column(nullable = false, precision = 18, scale = 3)
-    private BigDecimal gold=BigDecimal.ZERO;  // avoid capitalized field name
+    private BigDecimal gramsPurchased;
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    private double purchaseRate;
 
-    // Lifecycle hooks
-    @PrePersist
-    protected void onCreate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    @Enumerated(EnumType.STRING)
+    private StatusEnum status; // e.g., PURCHASED, REDEEMED
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    private LocalDate acquisitionDate; // When the gold was purchased
+    private BigDecimal gramsRemaining;
+
+    public DigiGoldWallet() {}
+
+    public DigiGoldWallet(Long userId, BigDecimal gramsPurchased, double purchaseRate, StatusEnum status, LocalDate acquisitionDate) {
+        this.userId = userId;
+        this.gramsPurchased = gramsPurchased;
+        this.purchaseRate = purchaseRate;
+        this.status = status;
+        this.acquisitionDate = acquisitionDate;
     }
 
     // Getters and Setters
-    public long getId() { return id; }
-    public void setId(long id) { this.id = id; }
+    public Long getWalletId() {
+        return id;
+    }
 
-    public String getUnits() { return units; }
-    public void setUnits(String units) { this.units = units; }
+    public void setWalletId(Long walletId) {
+        this.id = walletId;
+    }
 
-    public BigDecimal getGold() { return gold; }
-    public void setGold(BigDecimal gold) { this.gold = gold; }
+    public Long getUserId() {
+        return userId;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public BigDecimal getGramsPurchased() {
+        return gramsPurchased;
+    }
+
+    public void setGramsPurchased(BigDecimal gramsPurchased) {
+        this.gramsPurchased = gramsPurchased;
+    }
+
+    public double getPurchaseRate() {
+        return purchaseRate;
+    }
+
+    public void setPurchaseRate(double purchaseRate) {
+        this.purchaseRate = purchaseRate;
+    }
+
+    public StatusEnum getStatus() {
+        return status;
+    }
+
+    public void setStatus(StatusEnum status) {
+        this.status = status;
+    }
+
+    public LocalDate getAcquisitionDate() {
+        return acquisitionDate;
+    }
+
+    public void setAcquisitionDate(LocalDate localDate) {
+        this.acquisitionDate = localDate;
+    }
+
+	public BigDecimal getGramsRemaining() {
+		return gramsRemaining;
+	}
+
+	public void setGramsRemaining(BigDecimal gramsRemaining) {
+		this.gramsRemaining = gramsRemaining;
+	}
 }
