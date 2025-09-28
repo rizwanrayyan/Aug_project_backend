@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 public class RedeemRequest {
     private long userId;
     private BigDecimal grams;
+	private BigDecimal redemptionRate;
+	
 	public long getUserId() {
 		return userId;
 	}
@@ -17,6 +19,11 @@ public class RedeemRequest {
 	public void setGrams(BigDecimal grams) {
 		this.grams = grams;
 	}
-
+	public BigDecimal getRedemptionRate() {
+        return redemptionRate;
+    }
+    public void setRedemptionRate(BigDecimal redemptionRate) {
+        this.redemptionRate = redemptionRate;
+    }
     // getters & setters
 }

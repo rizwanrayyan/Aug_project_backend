@@ -1,6 +1,9 @@
 package com.example.saveetha_ec.service;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -35,9 +38,7 @@ public class BlockchainService {
 
     private Web3j web3j;
     private Credentials credentials;
-    // We remove the contract and txManager from class-level fields
-    // to create them dynamically for each transaction, ensuring nonce is always fresh.
-
+    
     private final UserRepository userRepository;
 
     public BlockchainService(UserRepository userRepository) {
@@ -46,7 +47,6 @@ public class BlockchainService {
 
     @PostConstruct
     public void init() {
-        // A client with a long timeout is crucial for waiting for transaction confirmation
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(60, TimeUnit.SECONDS)
                 .readTimeout(180, TimeUnit.SECONDS)
@@ -67,30 +67,22 @@ public class BlockchainService {
             throw new IllegalStateException("User " + userId + " does not have a wallet address set.");
         }
 
-        // --- THE FIX: DYNAMIC NONCE AND TRANSACTION MANAGER ---
-
-        // 1. Get the latest transaction count (nonce) right before sending.
-        // We use 'PENDING' to ensure we don't conflict with transactions still in the mempool.
         BigInteger nonce = web3j.ethGetTransactionCount(credentials.getAddress(), DefaultBlockParameterName.PENDING).send().getTransactionCount();
         System.out.println("Using fresh nonce: " + nonce);
 
-        long chainId = 80002; // Polygon Amoy testnet chain ID
+        long chainId = 80002; 
 
-        // 2. Create a new Transaction Manager for THIS transaction with the correct nonce.
         RawTransactionManager txManager = new RawTransactionManager(web3j, credentials, chainId);
 
-        // 3. Define robust EIP-1559 gas fees to ensure the transaction is picked up by miners.
-        BigInteger gasLimit = BigInteger.valueOf(500_000L); // A safe gas limit for your function
+        BigInteger gasLimit = BigInteger.valueOf(500_000L);
         BigInteger maxFeePerGas = Convert.toWei("150", Convert.Unit.GWEI).toBigInteger();
-        BigInteger maxPriorityFeePerGas = Convert.toWei("30", Convert.Unit.GWEI).toBigInteger(); // A good tip for the miner
+        BigInteger maxPriorityFeePerGas = Convert.toWei("30", Convert.Unit.GWEI).toBigInteger();
         ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, maxFeePerGas, maxPriorityFeePerGas, gasLimit);
         
-        // 4. Load the contract instance using our new, single-use transaction manager.
         DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider);
         
         System.out.println("Attempting to mint " + Convert.fromWei(amount.toString(), Convert.Unit.ETHER) + " tokens for " + toAddress);
 
-        // 5. Send the transaction.
         var transactionReceipt = contract.purchaseGold(toAddress, amount, dataHash).send();
 
         if (!transactionReceipt.isStatusOK()) {
@@ -102,7 +94,8 @@ public class BlockchainService {
         return transactionReceipt.getTransactionHash();
     }
 
-    public String redeemTokens(Long userId, BigInteger amount, byte[] dataHash) throws Exception {
+    // Updated redeemTokens method
+    public String redeemTokens(Long userId, BigInteger amount) throws Exception {
         UserDetail user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found for ID: " + userId));
 
@@ -110,12 +103,16 @@ public class BlockchainService {
         if (userAddress == null || userAddress.isBlank()) {
             throw new IllegalStateException("User " + userId + " does not have a wallet address set.");
         }
+        
+        // Generate a unique data hash internally for this specific redemption transaction
+        String uniqueRedemptionId = UUID.randomUUID().toString();
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] dataHash = digest.digest(uniqueRedemptionId.getBytes(StandardCharsets.UTF_8));
 
-        // --- DYNAMIC NONCE AND TRANSACTION MANAGER FOR REDEMPTION ---
         BigInteger nonce = web3j.ethGetTransactionCount(credentials.getAddress(), DefaultBlockParameterName.PENDING).send().getTransactionCount();
         System.out.println("Using fresh nonce for redemption: " + nonce);
 
-        long chainId = 80002; // Polygon Amoy
+        long chainId = 80002;
         RawTransactionManager txManager = new RawTransactionManager(web3j, credentials, chainId);
         
         BigInteger gasLimit = BigInteger.valueOf(500_000L);
@@ -127,7 +124,6 @@ public class BlockchainService {
         
         System.out.println("Attempting to redeem " + Convert.fromWei(amount.toString(), Convert.Unit.ETHER) + " tokens from " + userAddress);
 
-        // This calls the 'redeemGold(address user, ...)' function on your optimized contract
         var transactionReceipt = contract.redeemGold(userAddress, amount, dataHash).send();
 
         if (!transactionReceipt.isStatusOK()) {

@@ -1,25 +1,25 @@
 package com.example.saveetha_ec.controller;
 
 import java.math.BigDecimal;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.saveetha_ec.model.BuyGoldDTO;
+import com.example.saveetha_ec.model.BuyGoldDTO; // Assuming you'll rename your RedeemGoldDTO
+import com.example.saveetha_ec.model.RedeemRequest;
+import com.example.saveetha_ec.model.UserDetailsPrinciple;
 import com.example.saveetha_ec.service.TokenGoldService;
 import com.razorpay.Order;
 import com.razorpay.RazorpayException;
-
-import com.example.saveetha_ec.model.RedeemRequest; // Assuming you'll rename your RedeemGoldDTO
-import com.example.saveetha_ec.model.UserDetailsPrinciple;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import java.util.Map;
-import org.springframework.http.HttpStatus;
 
 
 @RestController
@@ -46,7 +46,7 @@ public class TokenGoldController {
             long userId = userDetails.getId(); 
 
             // Call the service to handle the redemption.
-            String txHash = tokenGoldService.redeemTokensForUser(userId, redeemRequest.getGrams());
+            String txHash = tokenGoldService.redeemTokensForUser(userId, redeemRequest);
 
             return ResponseEntity.ok().body(Map.of(
                 "message", "Redemption processed successfully",
