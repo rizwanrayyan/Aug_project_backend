@@ -3,7 +3,9 @@ package com.example.saveetha_ec.model;
 
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -24,7 +26,15 @@ private BigDecimal grams_purchased;
 private BigDecimal grams_remaining;
 private String transaction_hash;
 private String vaultId;
+@Column(name="date_of_acquisation")
+private LocalDateTime dateOfAcquisation;
 
+public LocalDateTime getDateOfAcquisation() {
+	return dateOfAcquisation;
+}
+public void setDateOfAcquisation(LocalDateTime dateOfAcquisation) {
+	this.dateOfAcquisation = dateOfAcquisation;
+}
 public long getUserId() {
 	return userId;
 }
