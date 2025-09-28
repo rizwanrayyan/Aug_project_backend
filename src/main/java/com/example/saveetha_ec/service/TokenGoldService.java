@@ -1,25 +1,34 @@
 package com.example.saveetha_ec.service;
 
-import com.example.saveetha_ec.model.*;
-import com.example.saveetha_ec.repository.OrderAndIdMatchingRepo;
-import com.example.saveetha_ec.repository.RedemptionRepository;
-import com.example.saveetha_ec.repository.TokenGoldRepository;
-import com.razorpay.Order;
-import com.razorpay.RazorpayClient;
-import com.razorpay.RazorpayException;
-import jakarta.transaction.Transactional;
-import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Formatter;
 import java.util.List;
 import java.util.Objects;
+
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.example.saveetha_ec.model.OrderAndIdMatching;
+import com.example.saveetha_ec.model.Product;
+import com.example.saveetha_ec.model.RedeemRequest;
+import com.example.saveetha_ec.model.Redemption;
+import com.example.saveetha_ec.model.StatusEnum;
+import com.example.saveetha_ec.model.TokenGold;
+import com.example.saveetha_ec.model.TransactionType;
+import com.example.saveetha_ec.repository.OrderAndIdMatchingRepo;
+import com.example.saveetha_ec.repository.RedemptionRepository;
+import com.example.saveetha_ec.repository.TokenGoldRepository;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class TokenGoldService {
@@ -31,7 +40,7 @@ public class TokenGoldService {
     private TokenGoldRepository tokenGoldRepo;
 
     @Autowired
-    private RedemptionRepository redemptionRepo; // Injected the new repository
+    private RedemptionRepository redemptionRepo;
 
     @Autowired
     private BlockchainService blockchainService;
@@ -56,7 +65,7 @@ public class TokenGoldService {
         orderIdAndUserID.setPaymentId("PENDING");
         orderIdAndUserID.setStatus("PENDING");
         orderIdAndUserID.setProductType(Product.TOKEN_GOLD);
-        orderIdAndUserID.setTransactionType(TransactionType.BUY); // Set transaction type
+        orderIdAndUserID.setTransactionType(TransactionType.BUY);
 
         Order order = razorpay.orders.create(orderRequest);
         orderIdAndUserID.setRazorpayOrderId(order.get("id"));
@@ -69,10 +78,8 @@ public class TokenGoldService {
         BigDecimal gramsToRedeem = redeemRequest.getGrams();
         BigDecimal redemptionRate = redeemRequest.getRedemptionRate();
 
-        // 1. Fetch all active and partially redeemed tokens for the user (FIFO)
         List<TokenGold> userTokens = tokenGoldRepo.findTokensForRedemption(userId, StatusEnum.FULLY_REDEEMED);
 
-        // 2. Verify sufficient balance
         BigDecimal totalBalance = userTokens.stream()
             .map(TokenGold::getGrams_remaining)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -81,7 +88,6 @@ public class TokenGoldService {
             throw new IllegalArgumentException("Insufficient token balance. You have " + totalBalance + " grams, but tried to redeem " + gramsToRedeem + " grams.");
         }
 
-        // 3. Create a transaction record for this redemption
         OrderAndIdMatching redemptionOrder = new OrderAndIdMatching();
         redemptionOrder.setUserId(userId);
         redemptionOrder.setGrams(gramsToRedeem);
@@ -89,49 +95,41 @@ public class TokenGoldService {
         redemptionOrder.setTransactionType(TransactionType.REDEEM);
         redemptionOrder.setProductType(Product.TOKEN_GOLD);
         redemptionOrder.setStatus("PROCESSING");
-        redemptionOrder.setPaymentId("N/A"); // No payment ID for redemptions
-        redemptionOrder.setRazorpayOrderId("N/A");
+        redemptionOrder.setPaymentId("N/A");
+        redemptionOrder.setRazorpayOrderId("N/A"); // No order ID for internal redemptions
         OrderAndIdMatching savedOrder = orderAndIDRepo.save(redemptionOrder);
 
-
-        // 4. Call the BlockchainService to perform the on-chain burn
         BigInteger amountWithDecimals = gramsToRedeem.multiply(new BigDecimal("1E18")).toBigInteger();
-        
-        // The dataHash for redemption is created in the blockchain service now.
-        // It's better to use a unique hash for each redemption transaction.
         String txHash = blockchainService.redeemTokens(userId, amountWithDecimals);
 
-
-        // 5. If blockchain tx is successful, update the database using FIFO logic
         BigDecimal remainingToRedeem = gramsToRedeem;
         for (TokenGold batch : userTokens) {
             if (remainingToRedeem.compareTo(BigDecimal.ZERO) <= 0) break;
             
-            // --- Data Hash Verification ---
-            String expectedHashInput = "" + batch.getGrams_purchased() + batch.getPurchase_rate() + batch.getDateOfAcquisation();
+            // --- FIX: CONSISTENT HASH VERIFICATION ---
+            long acquisitionTimestamp = batch.getDateOfAcquisation().toInstant(java.time.ZoneOffset.UTC).toEpochMilli();
+            String expectedHashInput = "" + batch.getGrams_purchased().toPlainString() + batch.getPurchase_rate() + acquisitionTimestamp;
+            
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] rehashedBytes = digest.digest(expectedHashInput.getBytes(StandardCharsets.UTF_8));
             String rehashedHex = bytesToHex(rehashedBytes);
+            // --- END OF FIX ---
 
-            // Compare re-calculated hash with the one stored from the webhook
             if (!Objects.equals(rehashedHex, batch.getData_hash())) {
-                 // You can decide how to handle this - throw an exception, log an alert, etc.
                  throw new SecurityException("Data hash mismatch for token ID " + batch.getTokenId() + ". Aborting redemption.");
             }
             
             BigDecimal amountFromBatch = batch.getGrams_remaining().min(remainingToRedeem);
 
-            // --- Create Redemption Record for Tax Reporting ---
             Redemption redemptionRecord = new Redemption();
             redemptionRecord.setUserId(userId);
-            redemptionRecord.setOrderId(savedOrder.getId()); // Link to the master transaction
+            redemptionRecord.setOrderId(savedOrder.getId());
             redemptionRecord.setTokenId(batch.getTokenId());
             redemptionRecord.setGramsRedeemed(amountFromBatch);
             redemptionRecord.setPurchaseRate(BigDecimal.valueOf(batch.getPurchase_rate()));
             redemptionRecord.setRedemptionRate(redemptionRate);
             redemptionRecord.setRedemptionDate(LocalDateTime.now());
 
-            // Calculate tax fields
             BigDecimal costBasis = redemptionRecord.getPurchaseRate().multiply(amountFromBatch);
             BigDecimal redemptionValue = redemptionRate.multiply(amountFromBatch);
             BigDecimal gain = redemptionValue.subtract(costBasis);
@@ -140,14 +138,11 @@ public class TokenGoldService {
             redemptionRecord.setRedemptionValue(redemptionValue);
             redemptionRecord.setGain(gain);
             
-            // Determine gain type (LTCG/STCG) - assuming 1 year holding period
             long daysHeld = Duration.between(batch.getDateOfAcquisation(), redemptionRecord.getRedemptionDate()).toDays();
             redemptionRecord.setGainType(daysHeld > 365 ? "LTCG" : "STCG");
 
             redemptionRepo.save(redemptionRecord);
 
-
-            // --- Update the Token Batch ---
             batch.setGrams_remaining(batch.getGrams_remaining().subtract(amountFromBatch));
             if (batch.getGrams_remaining().compareTo(BigDecimal.ZERO) == 0) {
                 batch.setStatus(StatusEnum.FULLY_REDEEMED);
@@ -159,24 +154,19 @@ public class TokenGoldService {
             remainingToRedeem = remainingToRedeem.subtract(amountFromBatch);
         }
         
-        // Mark the master transaction as successful
         savedOrder.setStatus("SUCCESS");
-        savedOrder.setTxHash(txHash); // Optionally store the hash here too
+        savedOrder.setTxHash(txHash);
         orderAndIDRepo.save(savedOrder);
         
         return txHash;
     }
 
-    // Helper method to convert byte array to hex string for comparison
     private String bytesToHex(byte[] hash) {
-        StringBuilder hexString = new StringBuilder(2 * hash.length);
-        for (byte b : hash) {
-            String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) {
-                hexString.append('0');
+        try (Formatter formatter = new Formatter()) {
+            for (byte b : hash) {
+                formatter.format("%02x", b);
             }
-            hexString.append(hex);
+            return formatter.toString();
         }
-        return hexString.toString();
     }
 }
