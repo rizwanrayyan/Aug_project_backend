@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.LocalDate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -51,7 +52,7 @@ public class Webhook_verify_update {
 @PostMapping("/ver")
 @Transactional
     public ResponseEntity<String> verifyPayment(@RequestHeader("X-Razorpay-Signature") String signature,
-                                                @RequestBody String payload) {
+    		                                    @RequestBody String payload) {
         try {
         	System.out.println("getting into webhook verify");
             if (verifySignature(payload, signature)) {
@@ -109,10 +110,13 @@ public class Webhook_verify_update {
                     orderAndIDMatch.setPaymentId(paymentId);
                     orderAndIDRepo.save(orderAndIDMatch);
                     long userId=orderAndIDMatch.getUserId();
-                    DigiGoldWallet wallet = digiGoldRepo.findById(userId)
-                            .orElse(new DigiGoldWallet());
-                    wallet.setId(userId);
-                    wallet.setGold(wallet.getGold().add(orderAndIDMatch.getGrams()));
+                    DigiGoldWallet wallet = new DigiGoldWallet();
+                    wallet.setUserId(userId);
+                    wallet.setGramsPurchased(orderAndIDMatch.getGrams());
+                    wallet.setGramsRemaining(orderAndIDMatch.getGrams());
+                    wallet.setPurchaseRate(orderAndIDMatch.getAmount());
+                    wallet.setAcquisitionDate(LocalDate.now());
+                    wallet.setStatus(StatusEnum.ACTIVE);
                     digiGoldRepo.save(wallet);
                 }
 
