@@ -1,23 +1,20 @@
 package com.example.saveetha_ec.service;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.RawTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.StaticEIP1559GasProvider;
 import org.web3j.utils.Convert;
+import org.web3j.utils.Numeric;
 
-import com.example.saveetha_ec.contracts.DigitalGoldToken;
+import com.example.saveetha_ec.contracts.DigitalGoldToken; // Updated contract wrapper
 import com.example.saveetha_ec.model.UserDetail;
 import com.example.saveetha_ec.repository.UserRepository;
 
@@ -58,6 +55,7 @@ public class BlockchainService {
         System.out.println("✅ BlockchainService initialized. Backend Wallet Address: " + credentials.getAddress());
     }
 
+    // UPDATED: Now returns the batchId from the event.
     public String mintTokens(Long userId, BigInteger amount, byte[] dataHash) throws Exception {
         UserDetail user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found for ID: " + userId));
@@ -67,35 +65,31 @@ public class BlockchainService {
             throw new IllegalStateException("User " + userId + " does not have a wallet address set.");
         }
 
-        BigInteger nonce = web3j.ethGetTransactionCount(credentials.getAddress(), DefaultBlockParameterName.PENDING).send().getTransactionCount();
-        System.out.println("Using fresh nonce: " + nonce);
-
-        long chainId = 80002; 
-
+        long chainId = 80002;
         RawTransactionManager txManager = new RawTransactionManager(web3j, credentials, chainId);
-
-        BigInteger gasLimit = BigInteger.valueOf(500_000L);
-        BigInteger maxFeePerGas = Convert.toWei("150", Convert.Unit.GWEI).toBigInteger();
-        BigInteger maxPriorityFeePerGas = Convert.toWei("30", Convert.Unit.GWEI).toBigInteger();
-        ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, maxFeePerGas, maxPriorityFeePerGas, gasLimit);
+        ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, Convert.toWei("150", Convert.Unit.GWEI).toBigInteger(), Convert.toWei("30", Convert.Unit.GWEI).toBigInteger(), BigInteger.valueOf(500_000L));
         
-        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider);
+        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider); // Use new contract wrapper
         
-        System.out.println("Attempting to mint " + Convert.fromWei(amount.toString(), Convert.Unit.ETHER) + " tokens for " + toAddress);
-
         var transactionReceipt = contract.purchaseGold(toAddress, amount, dataHash).send();
 
         if (!transactionReceipt.isStatusOK()) {
-            throw new RuntimeException("Minting transaction failed on-chain. Status: " + transactionReceipt.getStatus() 
-                + ". Revert reason: " + transactionReceipt.getRevertReason());
+            throw new RuntimeException("Minting transaction failed on-chain. Status: " + transactionReceipt.getStatus() + ". Revert reason: " + transactionReceipt.getRevertReason());
         }
         
-        System.out.println("✅ Transaction successful! Hash: " + transactionReceipt.getTransactionHash());
-        return transactionReceipt.getTransactionHash();
+        var events = contract.getGoldPurchasedEvents(transactionReceipt);
+        if (events.isEmpty()) {
+            throw new RuntimeException("Could not find GoldPurchased event in transaction receipt.");
+        }
+        
+        String batchId = Numeric.toHexString(events.get(0).batchId);
+        System.out.println("✅ Transaction successful! Hash: " + transactionReceipt.getTransactionHash() + ", BatchId: " + batchId);
+        
+        return batchId; // Return batchId to be stored
     }
 
-    // Updated redeemTokens method
-    public String redeemTokens(Long userId, BigInteger amount) throws Exception {
+    // UPDATED: Simplified to match the new contract's redeemGold function.
+    public String redeemGold(Long userId, BigInteger amount) throws Exception {
         UserDetail user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found for ID: " + userId));
 
@@ -103,32 +97,17 @@ public class BlockchainService {
         if (userAddress == null || userAddress.isBlank()) {
             throw new IllegalStateException("User " + userId + " does not have a wallet address set.");
         }
-        
-        // Generate a unique data hash internally for this specific redemption transaction
-        String uniqueRedemptionId = UUID.randomUUID().toString();
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] dataHash = digest.digest(uniqueRedemptionId.getBytes(StandardCharsets.UTF_8));
-
-        BigInteger nonce = web3j.ethGetTransactionCount(credentials.getAddress(), DefaultBlockParameterName.PENDING).send().getTransactionCount();
-        System.out.println("Using fresh nonce for redemption: " + nonce);
 
         long chainId = 80002;
         RawTransactionManager txManager = new RawTransactionManager(web3j, credentials, chainId);
+        ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, Convert.toWei("150", Convert.Unit.GWEI).toBigInteger(), Convert.toWei("30", Convert.Unit.GWEI).toBigInteger(), BigInteger.valueOf(500_000L));
         
-        BigInteger gasLimit = BigInteger.valueOf(500_000L);
-        BigInteger maxFeePerGas = Convert.toWei("150", Convert.Unit.GWEI).toBigInteger();
-        BigInteger maxPriorityFeePerGas = Convert.toWei("30", Convert.Unit.GWEI).toBigInteger();
-        ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, maxFeePerGas, maxPriorityFeePerGas, gasLimit);
-        
-        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider);
-        
-        System.out.println("Attempting to redeem " + Convert.fromWei(amount.toString(), Convert.Unit.ETHER) + " tokens from " + userAddress);
+        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider); // Use new contract wrapper
 
-        var transactionReceipt = contract.redeemGold(userAddress, amount, dataHash).send();
+        var transactionReceipt = contract.redeemGold(userAddress, amount).send();
 
         if (!transactionReceipt.isStatusOK()) {
-            throw new RuntimeException("Redemption transaction failed on-chain. Status: " + transactionReceipt.getStatus() 
-                + ". Revert reason: " + transactionReceipt.getRevertReason());
+            throw new RuntimeException("Redemption transaction failed on-chain. Status: " + transactionReceipt.getStatus() + ". Revert reason: " + transactionReceipt.getRevertReason());
         }
 
         System.out.println("✅ Redemption successful! Hash: " + transactionReceipt.getTransactionHash());
