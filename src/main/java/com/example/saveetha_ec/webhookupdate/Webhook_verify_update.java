@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.LocalDate;
 import java.util.Formatter;
 
 import javax.crypto.Mac;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.saveetha_ec.model.DigiGoldWallet;
 import com.example.saveetha_ec.model.OrderAndIdMatching;
 import com.example.saveetha_ec.model.Product;
 import com.example.saveetha_ec.model.StatusEnum;
@@ -101,7 +103,19 @@ public class Webhook_verify_update {
                     tokenGoldRepo.save(tokenGold);
 
                 } else if("PENDING".equals(orderAndIDMatch.getStatus()) && type.equals(Product.DIGITAL_GOLD)) {
-                   // ... digital gold logic remains the same ...
+                    // ... digital gold logic remains the same ...
+                    orderAndIDMatch.setStatus("CAPTURED");
+                    orderAndIDMatch.setPaymentId(paymentId);
+                    orderAndIDRepo.save(orderAndIDMatch);
+                    long userId=orderAndIDMatch.getUserId();
+                    DigiGoldWallet wallet = new DigiGoldWallet();
+                    wallet.setUserId(userId);
+                    wallet.setGramsPurchased(orderAndIDMatch.getGrams());
+                    wallet.setGramsRemaining(orderAndIDMatch.getGrams());
+                    wallet.setPurchaseRate(orderAndIDMatch.getAmount());
+                    wallet.setAcquisitionDate(LocalDate.now());
+                    wallet.setStatus(StatusEnum.ACTIVE);
+                    digiGoldRepo.save(wallet);
                 }
 
                 return ResponseEntity.ok("Webhook received and processed successfully.");
