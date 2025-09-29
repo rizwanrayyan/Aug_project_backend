@@ -23,7 +23,7 @@ import okhttp3.OkHttpClient;
 
 @Service
 public class BlockchainService {
-    // block
+    // blockchain.node.url=https://matic-mumbai.chainstacklabs.com
     @Value("${blockchain.node.url}")
     private String nodeUrl;
 
