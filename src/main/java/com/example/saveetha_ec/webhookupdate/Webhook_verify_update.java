@@ -82,8 +82,8 @@ public class Webhook_verify_update {
                     String dataHashHex = bytesToHex(dataHashBytes);
 
                     // UPDATED: mintTokens now returns the unique batchId
-                    String batchId = blockchainService.mintTokens(userId, amountWithDecimals, dataHashBytes);
-                    
+                    BlockchainService.MintingResult mint = blockchainService.mintTokens(userId, amountWithDecimals, dataHashBytes);
+                    orderAndIDMatch.setTxHash(mint.getTransactionHash());
                     orderAndIDRepo.save(orderAndIDMatch);
 
                     TokenGold tokenGold = new TokenGold();
@@ -94,7 +94,7 @@ public class Webhook_verify_update {
                     tokenGold.setData_hash(dataHashHex);
                     
                     // --- CRITICAL UPDATE: Store the unique batchId ---
-                    tokenGold.setBatchId(batchId);
+                    tokenGold.setBatchId(mint.getBatchId());
                     // --- END OF UPDATE ---
                     
                     tokenGold.setVaultId("VAULT0001");
