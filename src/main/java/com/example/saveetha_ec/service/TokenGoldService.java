@@ -2,8 +2,11 @@ package com.example.saveetha_ec.service;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -81,6 +84,37 @@ public class TokenGoldService {
         if (totalBalance.compareTo(gramsToRedeem) < 0) {
             throw new IllegalArgumentException("Insufficient token balance. You have " + totalBalance + " grams, but tried to redeem " + gramsToRedeem + " grams.");
         }
+        
+        // --- OPTIMIZED ON-CHAIN VERIFICATION ---
+        // 1. Identify which batches will actually be used for this redemption.
+        List<TokenGold> batchesToVerify = new ArrayList<>();
+        BigDecimal remainingToFulfill = gramsToRedeem;
+        for (TokenGold batch : userTokens) {
+            if (remainingToFulfill.compareTo(BigDecimal.ZERO) > 0) {
+                batchesToVerify.add(batch);
+                remainingToFulfill = remainingToFulfill.subtract(batch.getGrams_remaining());
+            } else {
+                break; 
+            }
+        }
+        
+        // 2. Verify ONLY the necessary batches against the blockchain.
+        for (TokenGold batch : batchesToVerify) {
+            long acquisitionTimestamp = batch.getDateOfAcquisation().toInstant(java.time.ZoneOffset.UTC).toEpochMilli();
+            String hashInput = "" + batch.getGrams_purchased().toPlainString() + batch.getPurchase_rate() + acquisitionTimestamp;
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] localHashBytes = digest.digest(hashInput.getBytes(StandardCharsets.UTF_8));
+
+            byte[] onChainHashBytes = blockchainService.getOnChainBatchHash(batch.getBatchId());
+
+            if (!java.util.Arrays.equals(localHashBytes, onChainHashBytes)) {
+                throw new SecurityException(
+                    "CRITICAL: Data integrity check failed for batch " + batch.getBatchId() + 
+                    ". Off-chain data does not match the on-chain record. Redemption has been aborted."
+                );
+            }
+        }
+        // --- END OF OPTIMIZED VERIFICATION ---
 
         OrderAndIdMatching redemptionOrder = new OrderAndIdMatching();
         redemptionOrder.setUserId(userId);
@@ -93,12 +127,9 @@ public class TokenGoldService {
         redemptionOrder.setRazorpayOrderId("N/A");
         OrderAndIdMatching savedOrder = orderAndIDRepo.save(redemptionOrder);
 
-        // --- UPDATED LOGIC ---
-        // 1. Call the blockchain to burn the total amount. The contract handles FIFO.
         BigInteger amountWithDecimals = gramsToRedeem.multiply(new BigDecimal("1E18")).toBigInteger();
         String txHash = blockchainService.redeemGold(userId, amountWithDecimals);
         
-        // 2. If the on-chain transaction succeeds, update the off-chain database records.
         BigDecimal remainingToRedeem = gramsToRedeem;
         for (TokenGold batch : userTokens) {
             if (remainingToRedeem.compareTo(BigDecimal.ZERO) <= 0) break;
