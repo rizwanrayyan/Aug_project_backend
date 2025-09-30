@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
@@ -26,6 +27,7 @@ import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.BaseEventResponse;
 import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tuples.generated.Tuple4;
 import org.web3j.tx.Contract;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
@@ -70,6 +72,8 @@ public class DigitalGoldToken extends Contract {
     public static final String FUNC_DECIMALS = "decimals";
 
     public static final String FUNC_DEFAULT_ADMIN_ROLE = "DEFAULT_ADMIN_ROLE";
+
+    public static final String FUNC_GETBATCH = "getBatch";
 
     public static final String FUNC_GETROLEADMIN = "getRoleAdmin";
 
@@ -586,6 +590,24 @@ public class DigitalGoldToken extends Contract {
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>() {}));
         return executeRemoteCallSingleValueReturn(function, byte[].class);
+    }
+
+    public RemoteFunctionCall<Tuple4<BigInteger, byte[], byte[], byte[]>> getBatch(byte[] batchId) {
+        final Function function = new Function(FUNC_GETBATCH, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(batchId)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}, new TypeReference<Bytes32>() {}, new TypeReference<Bytes32>() {}, new TypeReference<Bytes32>() {}));
+        return new RemoteFunctionCall<Tuple4<BigInteger, byte[], byte[], byte[]>>(function,
+                new Callable<Tuple4<BigInteger, byte[], byte[], byte[]>>() {
+                    @Override
+                    public Tuple4<BigInteger, byte[], byte[], byte[]> call() throws Exception {
+                        List<Type> results = executeCallMultipleValueReturn(function);
+                        return new Tuple4<BigInteger, byte[], byte[], byte[]>(
+                                (BigInteger) results.get(0).getValue(), 
+                                (byte[]) results.get(1).getValue(), 
+                                (byte[]) results.get(2).getValue(), 
+                                (byte[]) results.get(3).getValue());
+                    }
+                });
     }
 
     public RemoteFunctionCall<byte[]> getRoleAdmin(byte[] role) {

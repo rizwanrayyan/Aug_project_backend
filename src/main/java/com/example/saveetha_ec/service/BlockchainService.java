@@ -113,4 +113,29 @@ public class BlockchainService {
         System.out.println("✅ Redemption successful! Hash: " + transactionReceipt.getTransactionHash());
         return transactionReceipt.getTransactionHash();
     }
+
+    /**
+     * Calls the smart contract to get the dataHash of a specific batch.
+     *
+     * @param batchId The on-chain ID of the batch.
+     * @return The data hash stored on the blockchain for that batch.
+     * @throws Exception if the blockchain call fails.
+     */
+    public byte[] getOnChainBatchHash(String batchId) throws Exception {
+        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, credentials, (ContractGasProvider) null); // Use a null provider for read-only calls
+        
+        // The getBatch function returns multiple values, we are interested in the second one (dataHash)
+        var batchDetails = contract.getBatch(Numeric.hexStringToByteArray(batchId)).send();
+        
+        // The return type is a tuple, dataHash is the second element.
+        // Note: The generated wrapper might represent the tuple differently.
+        // You might need to adjust this based on your web3j wrapper generation.
+        // Assuming the wrapper returns a Tuple4<BigInteger, byte[], byte[], byte[]>
+        // This is a common pattern, but you must verify it.
+        if (batchDetails != null && batchDetails.getValue2() != null) {
+             return (byte[]) batchDetails.getValue2();
+        } else {
+            throw new RuntimeException("Could not retrieve batch details from the blockchain for batchId: " + batchId);
+        }
+    }
 }
