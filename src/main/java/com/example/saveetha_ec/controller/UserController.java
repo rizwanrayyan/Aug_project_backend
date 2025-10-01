@@ -7,7 +7,11 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,13 +26,13 @@ import com.example.saveetha_ec.service.UserService;
 public class UserController {
 	@Autowired
 	private UserService userService;
-	
+
 @PostMapping("/signup")
 public ResponseEntity<?> signUp(@RequestBody UserDetail user){
     try {
         UserDetail savedUser = userService.register(user);
         return ResponseEntity.status(HttpStatus.CREATED) // 201 Created
-                             .body(Map.of("message", "Successfully signed up!", 
+                             .body(Map.of("message", "Successfully signed up!",
                                           "username", savedUser.getUsername()));
     } catch (DataIntegrityViolationException e) {
         // Example: duplicate username or email (unique constraint violation)
@@ -41,7 +45,7 @@ public ResponseEntity<?> signUp(@RequestBody UserDetail user){
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                              .body(Map.of("error", "Something went wrong"));
     }
-	
+
 }
 @PostMapping("/login")
 public ResponseEntity<?> login(@RequestBody loginDetail login){
@@ -55,5 +59,17 @@ public ResponseEntity<?> login(@RequestBody loginDetail login){
 	return ResponseEntity.status(200).body(Map.of("token",token));
 	}
 	return ResponseEntity.status(401).body("Invalid username or password!");
+}
+@GetMapping("/profile")
+public ResponseEntity<?> profile(){
+	Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String username = authentication.getName();
+    long userId=userService.getUserIdByUsername(username);
+    UserDetail user=userService.findByUserId(userId);
+    if(user!=null)
+	return ResponseEntity.ok(Map.of("userDetails",user));
+    else
+    	return ResponseEntity.status(400).body("invalid user!");
+
 }
 }
