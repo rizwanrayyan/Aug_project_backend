@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Formatter;
 
 import javax.crypto.Mac;
@@ -83,8 +81,6 @@ public class Webhook_verify_update {
                     String dataHashHex = bytesToHex(dataHashBytes);
 
                     // UPDATED: mintTokens now returns the unique batchId
-                    String batchId = blockchainService.mintTokens(userId, amountWithDecimals, dataHashBytes);
-
                     BlockchainService.MintingResult mint = blockchainService.mintTokens(userId, amountWithDecimals, dataHashBytes);
                     orderAndIDMatch.setTxHash(mint.getTransactionHash());
                     orderAndIDRepo.save(orderAndIDMatch);
