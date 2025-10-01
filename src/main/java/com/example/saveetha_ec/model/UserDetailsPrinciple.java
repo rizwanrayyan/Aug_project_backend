@@ -36,4 +36,7 @@ public class UserDetailsPrinciple implements UserDetails {
 		return user.getUsername();
 	}
 
+	public long getId() {
+		return user.getId();
+	}
 }

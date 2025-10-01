@@ -136,6 +136,16 @@
 		"type": "error"
 	},
 	{
+		"inputs": [],
+		"name": "EnforcedPause",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ExpectedPause",
+		"type": "error"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -176,38 +186,19 @@
 				"type": "uint256"
 			},
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "bytes32",
 				"name": "dataHash",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"internalType": "bytes32",
+				"name": "batchId",
 				"type": "bytes32"
 			}
 		],
 		"name": "GoldPurchased",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "bytes32",
-				"name": "dataHash",
-				"type": "bytes32"
-			}
-		],
-		"name": "GoldRedeemed",
 		"type": "event"
 	},
 	{
@@ -267,21 +258,27 @@
 			}
 		],
 		"name": "purchaseGold",
-		"outputs": [],
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
 				"internalType": "uint256",
 				"name": "amount",
 				"type": "uint256"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "dataHash",
-				"type": "bytes32"
 			}
 		],
 		"name": "redeemGold",
@@ -571,6 +568,40 @@
 		"inputs": [
 			{
 				"internalType": "bytes32",
+				"name": "batchId",
+				"type": "bytes32"
+			}
+		],
+		"name": "getBatch",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "dataHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "prev",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "next",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
 				"name": "role",
 				"type": "bytes32"
 			}
@@ -605,6 +636,19 @@
 				"internalType": "bool",
 				"name": "",
 				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "MAX_BATCHES_PER_CALL",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
