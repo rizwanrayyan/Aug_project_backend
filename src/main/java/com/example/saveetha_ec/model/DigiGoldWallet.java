@@ -2,7 +2,7 @@ package com.example.saveetha_ec.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 
 @Entity
@@ -22,12 +22,12 @@ public class DigiGoldWallet {
     @Enumerated(EnumType.STRING)
     private StatusEnum status; // e.g., PURCHASED, REDEEMED
 
-    private LocalDate acquisitionDate; // When the gold was purchased
+    private LocalDateTime acquisitionDate; // When the gold was purchased
     private BigDecimal gramsRemaining;
 
     public DigiGoldWallet() {}
 
-    public DigiGoldWallet(Long userId, BigDecimal gramsPurchased, double purchaseRate, StatusEnum status, LocalDate acquisitionDate) {
+    public DigiGoldWallet(Long userId, BigDecimal gramsPurchased, double purchaseRate, StatusEnum status, LocalDateTime acquisitionDate) {
         this.userId = userId;
         this.gramsPurchased = gramsPurchased;
         this.purchaseRate = purchaseRate;
@@ -76,12 +76,12 @@ public class DigiGoldWallet {
         this.status = status;
     }
 
-    public LocalDate getAcquisitionDate() {
+    public LocalDateTime getAcquisitionDate() {
         return acquisitionDate;
     }
 
-    public void setAcquisitionDate(LocalDate localDate) {
-        this.acquisitionDate = localDate;
+    public void setAcquisitionDate(LocalDateTime localDateTime) {
+        this.acquisitionDate = localDateTime;
     }
 
 	public BigDecimal getGramsRemaining() {
@@ -91,4 +91,11 @@ public class DigiGoldWallet {
 	public void setGramsRemaining(BigDecimal gramsRemaining) {
 		this.gramsRemaining = gramsRemaining;
 	}
+
+	public void setAcquisitionDate1(LocalDateTime createdAt) {
+		this.acquisitionDate=createdAt;
+
+	}
+
+
 }

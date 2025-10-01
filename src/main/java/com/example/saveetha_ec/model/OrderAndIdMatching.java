@@ -18,7 +18,7 @@ public class OrderAndIdMatching {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String razorpayOrderId;
 
     @Column(nullable = false)
@@ -26,10 +26,10 @@ public class OrderAndIdMatching {
 
     @Column(nullable = false)
     private double amount;
-    
+
     @Column(nullable=false)
     private BigDecimal grams;
-    
+
     @Column(nullable=false)
     private String paymentId;
 
@@ -38,12 +38,12 @@ public class OrderAndIdMatching {
 
     @Version
     private Long version;
-    
+
     @Column(nullable = false)
     private String status = "PENDING";
 
     private LocalDateTime createdAt = LocalDateTime.now();
-    
+
     @Enumerated(EnumType.STRING)
 	private Product productType;
 
@@ -132,7 +132,7 @@ public class OrderAndIdMatching {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
-	
+
 	public Product getProductType() {
 		return productType;
 	}

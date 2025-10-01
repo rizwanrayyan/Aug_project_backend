@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Formatter;
 
 import javax.crypto.Mac;
@@ -48,7 +49,7 @@ public class Webhook_verify_update {
 
     private final String RAZORPAY_WEBHOOK_SECRET="Rizwan@6666";
 
-    @PostMapping("/ver")
+    @PostMapping("/ve")
     @Transactional
     public ResponseEntity<String> verifyPayment(@RequestHeader("X-Razorpay-Signature") String signature,
                                                 @RequestBody String payload) {
@@ -63,25 +64,27 @@ public class Webhook_verify_update {
                 if (orderAndIDMatch == null) {
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Order not found");
                 }
-                
+
                 Product type = orderAndIDMatch.getProductType();
 
                 if ("PENDING".equals(orderAndIDMatch.getStatus()) && type.equals(Product.TOKEN_GOLD)) {
                     orderAndIDMatch.setStatus("CAPTURED");
                     orderAndIDMatch.setPaymentId(paymentId);
-                    
+
                     long userId = orderAndIDMatch.getUserId();
                     BigDecimal grams = orderAndIDMatch.getGrams();
                     BigInteger amountWithDecimals = grams.multiply(new BigDecimal("1E18")).toBigInteger();
                     double rateOfPurchase = orderAndIDMatch.getAmount();
                     long acquisitionTimestamp = orderAndIDMatch.getCreatedAt().toInstant(java.time.ZoneOffset.UTC).toEpochMilli();
                     String hashInput = "" + grams.toPlainString() + rateOfPurchase + acquisitionTimestamp;
-                    
+
                     MessageDigest digest = MessageDigest.getInstance("SHA-256");
                     byte[] dataHashBytes = digest.digest(hashInput.getBytes(StandardCharsets.UTF_8));
                     String dataHashHex = bytesToHex(dataHashBytes);
 
                     // UPDATED: mintTokens now returns the unique batchId
+                    String batchId = blockchainService.mintTokens(userId, amountWithDecimals, dataHashBytes);
+
                     BlockchainService.MintingResult mint = blockchainService.mintTokens(userId, amountWithDecimals, dataHashBytes);
                     orderAndIDMatch.setTxHash(mint.getTransactionHash());
                     orderAndIDRepo.save(orderAndIDMatch);
@@ -92,11 +95,10 @@ public class Webhook_verify_update {
                     tokenGold.setGrams_remaining(grams);
                     tokenGold.setPurchase_rate(orderAndIDMatch.getAmount());
                     tokenGold.setData_hash(dataHashHex);
-                    
                     // --- CRITICAL UPDATE: Store the unique batchId ---
                     tokenGold.setBatchId(mint.getBatchId());
                     // --- END OF UPDATE ---
-                    
+
                     tokenGold.setVaultId("VAULT0001");
                     tokenGold.setStatus(StatusEnum.ACTIVE);
                     tokenGold.setDateOfAcquisation(orderAndIDMatch.getCreatedAt());
@@ -113,7 +115,7 @@ public class Webhook_verify_update {
                     wallet.setGramsPurchased(orderAndIDMatch.getGrams());
                     wallet.setGramsRemaining(orderAndIDMatch.getGrams());
                     wallet.setPurchaseRate(orderAndIDMatch.getAmount());
-                    wallet.setAcquisitionDate(LocalDate.now());
+                    wallet.setAcquisitionDate(orderAndIDMatch.getCreatedAt());
                     wallet.setStatus(StatusEnum.ACTIVE);
                     digiGoldRepo.save(wallet);
                 }
@@ -141,7 +143,7 @@ public class Webhook_verify_update {
         String generatedSignature = sb.toString();
         return generatedSignature.equals(signature);
     }
-    
+
     private String bytesToHex(byte[] hash) {
         try (Formatter formatter = new Formatter()) {
             for (byte b : hash) {

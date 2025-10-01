@@ -35,7 +35,7 @@ public class BlockchainService {
 
     private Web3j web3j;
     private Credentials credentials;
-    
+
     private final UserRepository userRepository;
 
     public BlockchainService(UserRepository userRepository) {
@@ -87,22 +87,22 @@ public class BlockchainService {
         long chainId = 80002;
         RawTransactionManager txManager = new RawTransactionManager(web3j, credentials, chainId);
         ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, Convert.toWei("150", Convert.Unit.GWEI).toBigInteger(), Convert.toWei("30", Convert.Unit.GWEI).toBigInteger(), BigInteger.valueOf(500_000L));
-        
+
         DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider); // Use new contract wrapper
-        
+
         var transactionReceipt = contract.purchaseGold(toAddress, amount, dataHash).send();
 
         if (!transactionReceipt.isStatusOK()) {
             throw new RuntimeException("Minting transaction failed on-chain. Status: " + transactionReceipt.getStatus() + ". Revert reason: " + transactionReceipt.getRevertReason());
         }
-        
+
         var events = contract.getGoldPurchasedEvents(transactionReceipt);
         if (events.isEmpty()) {
             throw new RuntimeException("Could not find GoldPurchased event in transaction receipt.");
         }
-        
+
         String batchId = Numeric.toHexString(events.get(0).batchId);
-        System.out.println("✅ Transaction successful! Hash: " + transactionReceipt.getTransactionHash() + ", BatchId: " + batchId);
+        System.out.println("✅ Transaction successful! Hash: " + transactionReceipt.getTransactionHash() + ", BatchId: " + batchId); // Return batchId to be stored
         
         return new MintingResult(batchId, transactionReceipt.getTransactionHash());
     }
@@ -120,7 +120,7 @@ public class BlockchainService {
         long chainId = 80002;
         RawTransactionManager txManager = new RawTransactionManager(web3j, credentials, chainId);
         ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, Convert.toWei("150", Convert.Unit.GWEI).toBigInteger(), Convert.toWei("30", Convert.Unit.GWEI).toBigInteger(), BigInteger.valueOf(500_000L));
-        
+
         DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider); // Use new contract wrapper
 
         var transactionReceipt = contract.redeemGold(userAddress, amount).send();
@@ -140,17 +140,22 @@ public class BlockchainService {
      * @return The data hash stored on the blockchain for that batch.
      * @throws Exception if the blockchain call fails.
      */
-    public byte[] getOnChainBatchHash(String batchId) throws Exception {
-        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, credentials, (ContractGasProvider) null); // Use a null provider for read-only calls
-        
+ // Inside the getOnChainBatchHash method in BlockchainService.java
+
+    @SuppressWarnings("deprecation")
+	public byte[] getOnChainBatchHash(String batchId) throws Exception {
+        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, credentials, (ContractGasProvider) null);
+
+        // ------------------- FIX -------------------
+        // Convert the hex string to a BigInteger first, then to a 32-byte array.
+        // This correctly handles padding for the bytes32 type.
+        BigInteger batchIdBigInt = Numeric.toBigInt(batchId);
+        byte[] batchIdBytes32 = Numeric.toBytesPadded(batchIdBigInt, 32);
+        // ----------------- END FIX -----------------
+
         // The getBatch function returns multiple values, we are interested in the second one (dataHash)
-        var batchDetails = contract.getBatch(Numeric.hexStringToByteArray(batchId)).send();
-        
-        // The return type is a tuple, dataHash is the second element.
-        // Note: The generated wrapper might represent the tuple differently.
-        // You might need to adjust this based on your web3j wrapper generation.
-        // Assuming the wrapper returns a Tuple4<BigInteger, byte[], byte[], byte[]>
-        // This is a common pattern, but you must verify it.
+        var batchDetails = contract.getBatch(batchIdBytes32).send(); // Use the padded byte array
+
         if (batchDetails != null && batchDetails.getValue2() != null) {
              return (byte[]) batchDetails.getValue2();
         } else {
