@@ -42,6 +42,25 @@ public class BlockchainService {
         this.userRepository = userRepository;
     }
 
+    // Add this class inside the BlockchainService class
+    public static class MintingResult {
+        private final String batchId;
+        private final String transactionHash;
+
+        public MintingResult(String batchId, String transactionHash) {
+            this.batchId = batchId;
+            this.transactionHash = transactionHash;
+        }
+
+        public String getBatchId() {
+            return batchId;
+        }
+
+        public String getTransactionHash() {
+            return transactionHash;
+        }
+    }
+
     @PostConstruct
     public void init() {
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
@@ -56,7 +75,7 @@ public class BlockchainService {
     }
 
     // UPDATED: Now returns the batchId from the event.
-    public String mintTokens(Long userId, BigInteger amount, byte[] dataHash) throws Exception {
+    public MintingResult mintTokens(Long userId, BigInteger amount, byte[] dataHash) throws Exception {
         UserDetail user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found for ID: " + userId));
 
@@ -83,9 +102,9 @@ public class BlockchainService {
         }
 
         String batchId = Numeric.toHexString(events.get(0).batchId);
-        System.out.println("✅ Transaction successful! Hash: " + transactionReceipt.getTransactionHash() + ", BatchId: " + batchId);
-
-        return batchId; // Return batchId to be stored
+        System.out.println("✅ Transaction successful! Hash: " + transactionReceipt.getTransactionHash() + ", BatchId: " + batchId); // Return batchId to be stored
+        
+        return new MintingResult(batchId, transactionReceipt.getTransactionHash());
     }
 
     // UPDATED: Simplified to match the new contract's redeemGold function.
