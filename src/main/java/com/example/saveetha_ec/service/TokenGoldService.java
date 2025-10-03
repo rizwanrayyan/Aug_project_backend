@@ -19,9 +19,11 @@ import com.example.saveetha_ec.model.RedeemRequest;
 import com.example.saveetha_ec.model.Redemption;
 import com.example.saveetha_ec.model.StatusEnum;
 import com.example.saveetha_ec.model.TokenGold;
+import com.example.saveetha_ec.model.TokenGoldHoldings;
 import com.example.saveetha_ec.model.TransactionType;
 import com.example.saveetha_ec.repository.OrderAndIdMatchingRepo;
 import com.example.saveetha_ec.repository.RedemptionRepository;
+import com.example.saveetha_ec.repository.TokenGoldHoldingsRepo;
 import com.example.saveetha_ec.repository.TokenGoldRepository;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
@@ -34,7 +36,7 @@ public class TokenGoldService {
 
     @Autowired
     private OrderAndIdMatchingRepo orderAndIDRepo;
-    
+
     @Autowired
     private TokenGoldRepository tokenGoldRepo;
 
@@ -43,6 +45,9 @@ public class TokenGoldService {
 
     @Autowired
     private BlockchainService blockchainService;
+
+    @Autowired
+    private TokenGoldHoldingsRepo trepo;
 
     private RazorpayClient razorpay;
 
@@ -84,7 +89,7 @@ public class TokenGoldService {
         if (totalBalance.compareTo(gramsToRedeem) < 0) {
             throw new IllegalArgumentException("Insufficient token balance. You have " + totalBalance + " grams, but tried to redeem " + gramsToRedeem + " grams.");
         }
-        
+
         // --- OPTIMIZED ON-CHAIN VERIFICATION ---
         // 1. Identify which batches will actually be used for this redemption.
         List<TokenGold> batchesToVerify = new ArrayList<>();
@@ -94,10 +99,10 @@ public class TokenGoldService {
                 batchesToVerify.add(batch);
                 remainingToFulfill = remainingToFulfill.subtract(batch.getGrams_remaining());
             } else {
-                break; 
+                break;
             }
         }
-        
+
         // 2. Verify ONLY the necessary batches against the blockchain.
         for (TokenGold batch : batchesToVerify) {
             long acquisitionTimestamp = batch.getDateOfAcquisation().toInstant(java.time.ZoneOffset.UTC).toEpochMilli();
@@ -109,7 +114,7 @@ public class TokenGoldService {
 
             if (!java.util.Arrays.equals(localHashBytes, onChainHashBytes)) {
                 throw new SecurityException(
-                    "CRITICAL: Data integrity check failed for batch " + batch.getBatchId() + 
+                    "CRITICAL: Data integrity check failed for batch " + batch.getBatchId() +
                     ". Off-chain data does not match the on-chain record. Redemption has been aborted."
                 );
             }
@@ -129,7 +134,19 @@ public class TokenGoldService {
 
         BigInteger amountWithDecimals = gramsToRedeem.multiply(new BigDecimal("1E18")).toBigInteger();
         String txHash = blockchainService.redeemGold(userId, amountWithDecimals);
-        
+
+        // updating individual record
+        TokenGoldHoldings userHoldings = trepo.findByUserId(userId)
+        	    .orElseThrow(() -> new IllegalArgumentException("No holdings found for user"));
+
+        	BigDecimal current = userHoldings.getGrams();
+        	if (current.compareTo(gramsToRedeem) < 0) {
+        	    throw new IllegalArgumentException("Not enough balance. Current = " + current + " grams");
+        	}
+
+        	userHoldings.setGrams(current.subtract(gramsToRedeem));
+        	trepo.save(userHoldings);
+
         BigDecimal remainingToRedeem = gramsToRedeem;
         for (TokenGold batch : userTokens) {
             if (remainingToRedeem.compareTo(BigDecimal.ZERO) <= 0) break;
@@ -164,11 +181,11 @@ public class TokenGoldService {
 
             remainingToRedeem = remainingToRedeem.subtract(amountToRedeemFromBatch);
         }
-        
+
         savedOrder.setStatus("SUCCESS");
         savedOrder.setTxHash(txHash);
         orderAndIDRepo.save(savedOrder);
-        
+
         return txHash;
     }
 }
