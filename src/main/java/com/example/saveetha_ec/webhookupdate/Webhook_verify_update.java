@@ -18,13 +18,18 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+
 import com.example.saveetha_ec.model.DigiGoldWallet;
+import com.example.saveetha_ec.model.GoldHoldings;
 import com.example.saveetha_ec.model.OrderAndIdMatching;
 import com.example.saveetha_ec.model.Product;
 import com.example.saveetha_ec.model.StatusEnum;
 import com.example.saveetha_ec.model.TokenGold;
+import com.example.saveetha_ec.model.TokenGoldHoldings;
 import com.example.saveetha_ec.repository.DigiGoldWalletRepo;
+import com.example.saveetha_ec.repository.GoldHoldingsRepo;
 import com.example.saveetha_ec.repository.OrderAndIdMatchingRepo;
+import com.example.saveetha_ec.repository.TokenGoldHoldingsRepo;
 import com.example.saveetha_ec.repository.TokenGoldRepository;
 import com.example.saveetha_ec.service.BlockchainService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -44,10 +49,14 @@ public class Webhook_verify_update {
     private BlockchainService blockchainService;
     @Autowired
     private DigiGoldWalletRepo digiGoldRepo;
+    @Autowired
+    private GoldHoldingsRepo grepo;
+    @Autowired
+    private TokenGoldHoldingsRepo trepo;
 
     private final String RAZORPAY_WEBHOOK_SECRET="Rizwan@6666";
 
-    @PostMapping("/ve")
+    @PostMapping("/v")
     @Transactional
     public ResponseEntity<String> verifyPayment(@RequestHeader("X-Razorpay-Signature") String signature,
                                                 @RequestBody String payload) {
@@ -85,6 +94,19 @@ public class Webhook_verify_update {
                     orderAndIDMatch.setTxHash(mint.getTransactionHash());
                     orderAndIDRepo.save(orderAndIDMatch);
 
+                    // update Individual Record of every user How much gold do they have
+                    TokenGoldHoldings userHoldings = trepo.findByUserId(userId).orElseGet(() -> {
+                        TokenGoldHoldings newHoldings = new TokenGoldHoldings();
+                        newHoldings.setUserId(userId);  // important!
+                        return newHoldings;
+                    });
+
+                    BigDecimal current = userHoldings.getGrams();
+                    BigDecimal updated = current.add(grams);
+
+                    userHoldings.setGrams(updated);
+                    trepo.save(userHoldings);
+
                     TokenGold tokenGold = new TokenGold();
                     tokenGold.setUserId(userId);
                     tokenGold.setGrams_purchased(grams);
@@ -106,6 +128,21 @@ public class Webhook_verify_update {
                     orderAndIDMatch.setPaymentId(paymentId);
                     orderAndIDRepo.save(orderAndIDMatch);
                     long userId=orderAndIDMatch.getUserId();
+
+                    //Individual Holdings of a user
+                    GoldHoldings userHoldings = grepo.findByUserId(userId).orElseGet(() -> {
+                        GoldHoldings newHoldings = new GoldHoldings();
+                        newHoldings.setUserId(userId);  // important!
+                        return newHoldings;
+                    });
+
+                    BigDecimal current = userHoldings.getGrams();
+                    BigDecimal updated = current.add(orderAndIDMatch.getGrams());
+
+                    userHoldings.setGrams(updated);
+                    grepo.save(userHoldings);
+
+                    //Every Purchase and Redemption Key
                     DigiGoldWallet wallet = new DigiGoldWallet();
                     wallet.setUserId(userId);
                     wallet.setGramsPurchased(orderAndIDMatch.getGrams());

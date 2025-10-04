@@ -1,5 +1,6 @@
 package com.example.saveetha_ec.service;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
 
@@ -7,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.RawTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
@@ -86,9 +88,11 @@ public class BlockchainService {
 
         long chainId = 80002;
         RawTransactionManager txManager = new RawTransactionManager(web3j, credentials, chainId);
-        ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, Convert.toWei("150", Convert.Unit.GWEI).toBigInteger(), Convert.toWei("30", Convert.Unit.GWEI).toBigInteger(), BigInteger.valueOf(500_000L));
 
-        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider); // Use new contract wrapper
+        ContractGasProvider gasProvider = new StaticEIP1559GasProvider(chainId, Convert.toWei("150", Convert.Unit.GWEI).toBigInteger(), Convert.toWei("30", Convert.Unit.GWEI).toBigInteger(), BigInteger.valueOf(500_000L));
+        // 4. Load the contract with dynamic gas settings
+        DigitalGoldToken contract = DigitalGoldToken.load(contractAddress, web3j, txManager, gasProvider);
+        // Use new contract wrapper
 
         var transactionReceipt = contract.purchaseGold(toAddress, amount, dataHash).send();
 
@@ -103,7 +107,7 @@ public class BlockchainService {
 
         String batchId = Numeric.toHexString(events.get(0).batchId);
         System.out.println("✅ Transaction successful! Hash: " + transactionReceipt.getTransactionHash() + ", BatchId: " + batchId); // Return batchId to be stored
-        
+
         return new MintingResult(batchId, transactionReceipt.getTransactionHash());
     }
 

@@ -10,10 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.saveetha_ec.model.DigiGoldWallet;
+import com.example.saveetha_ec.model.GoldHoldings;
 import com.example.saveetha_ec.model.OrderAndIdMatching;
 import com.example.saveetha_ec.model.Product;
 import com.example.saveetha_ec.model.StatusEnum;
 import com.example.saveetha_ec.repository.DigiGoldWalletRepo;
+import com.example.saveetha_ec.repository.GoldHoldingsRepo;
 import com.example.saveetha_ec.repository.OrderAndIdMatchingRepo;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
@@ -28,6 +30,8 @@ public class DigiGoldService {
 	private OrderAndIdMatchingRepo orderAndIDRepo;
 	@Autowired
 	private DigiGoldWalletRepo repo;
+	@Autowired
+	private GoldHoldingsRepo grepo;
 	private RazorpayClient razorpay;
 
 	public DigiGoldService() throws Exception{
@@ -58,6 +62,14 @@ public String redeemGold(long userId, BigDecimal gramsToRedeem) {
         return "No balance available for redemption.";
     }
 
+    // Fetch aggregate holdings
+    GoldHoldings userHoldings = grepo.findByUserId(userId)
+            .orElseThrow(() -> new IllegalArgumentException("No holdings found for user"));
+
+    if (userHoldings.getGrams().compareTo(gramsToRedeem) < 0) {
+        return "Not enough balance in holdings to redeem.";
+    }
+
     BigDecimal remainingToRedeem = gramsToRedeem;
 
     for (DigiGoldWallet wallet : wallets) {
@@ -72,6 +84,11 @@ public String redeemGold(long userId, BigDecimal gramsToRedeem) {
             }
 
             repo.save(wallet);
+
+            // ✅ Update GoldHoldings here
+            userHoldings.setGrams(userHoldings.getGrams().subtract(gramsToRedeem));
+            grepo.save(userHoldings);
+
             return "Redeemed successfully.";
         } else {
             // Case 2: Redeem all from this wallet and continue
@@ -87,7 +104,12 @@ public String redeemGold(long userId, BigDecimal gramsToRedeem) {
         return "Not enough balance to redeem the requested grams.";
     }
 
+    // ✅ Final holdings update after full redemption
+    userHoldings.setGrams(userHoldings.getGrams().subtract(gramsToRedeem));
+    grepo.save(userHoldings);
+
     return "Redeemed successfully.";
 }
+
 
 }
