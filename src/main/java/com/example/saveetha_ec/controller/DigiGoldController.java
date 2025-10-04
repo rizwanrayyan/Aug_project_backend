@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,7 +17,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.saveetha_ec.model.BuyGoldDTO;
+import com.example.saveetha_ec.model.OrderAndIdMatching;
 import com.example.saveetha_ec.model.RedeemRequest;
+import com.example.saveetha_ec.repository.OrderAndIdMatchingRepo;
 import com.example.saveetha_ec.service.DigiGoldService;
 import com.example.saveetha_ec.service.UserService;
 import com.razorpay.Order;
@@ -32,6 +36,8 @@ public class DigiGoldController {
 private DigiGoldService digiGoldService;
 @Autowired
 private UserService userService;
+@Autowired
+private OrderAndIdMatchingRepo orderAndIDRepo;
 
 
 @PostMapping("/buy")
@@ -57,6 +63,12 @@ public ResponseEntity<String> redeemCall(@RequestBody RedeemRequest request) {
     } else {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
     }
+}
+@GetMapping("/status/{orderId}")
+public ResponseEntity<?> getPaymentStatus(@PathVariable String orderId) {
+    OrderAndIdMatching order = orderAndIDRepo.findByRazorpayOrderId(orderId);
+    if (order == null) return ResponseEntity.notFound().build();
+    return ResponseEntity.ok(Map.of("status", order.getStatus()));
 }
 
 }

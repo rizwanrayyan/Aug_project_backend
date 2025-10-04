@@ -49,6 +49,7 @@ public class SecurityConfig {
 				.requestMatchers("/api/transactions/**").hasAuthority("ROLE_USER")
 				.requestMatchers("/api/token/**").hasAuthority("ROLE_USER")
 				.requestMatchers("/api/goldprice/**").hasAuthority("ROLE_USER")
+				.requestMatchers("/api/gold/**").hasAuthority("ROLE_USER")
 				)
 				.sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())
