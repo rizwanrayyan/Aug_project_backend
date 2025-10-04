@@ -22,8 +22,10 @@ private GoldHoldingsService holdingsService;
 private UserService userService;
 @GetMapping("/gold")
 public ResponseEntity<?> getGoldHoldings() {
+	System.out.println("Getting into the getGold Controller");
 	Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String username = authentication.getName();
+    System.out.println(username);
     long userId=userService.getUserIdByUsername(username);
 	BigDecimal holdings=holdingsService.getGoldHoldings(userId);
 	return ResponseEntity.ok(holdings);

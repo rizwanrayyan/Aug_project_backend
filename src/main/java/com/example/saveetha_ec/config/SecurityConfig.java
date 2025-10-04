@@ -45,6 +45,7 @@ public class SecurityConfig {
 				.requestMatchers("/api/gold/buy").permitAll()
 				.requestMatchers("/api/webhook/v").permitAll()
 				.requestMatchers("/api/verify/**").hasAuthority("ROLE_USER")
+				.requestMatchers("/api/holdings/**").hasAuthority("ROLE_USER")
 				.requestMatchers("/api/transactions/**").hasAuthority("ROLE_USER")
 				.requestMatchers("/api/token/**").hasAuthority("ROLE_USER")
 				.requestMatchers("/api/goldprice/**").hasAuthority("ROLE_USER")
