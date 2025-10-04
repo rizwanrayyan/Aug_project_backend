@@ -18,6 +18,7 @@ import com.example.saveetha_ec.model.BuyGoldDTO; // Assuming you'll rename your 
 import com.example.saveetha_ec.model.RedeemRequest;
 import com.example.saveetha_ec.model.UserDetailsPrinciple;
 import com.example.saveetha_ec.service.TokenGoldService;
+import com.example.saveetha_ec.service.UserService;
 import com.razorpay.Order;
 import com.razorpay.RazorpayException;
 
@@ -27,15 +28,19 @@ import com.razorpay.RazorpayException;
 public class TokenGoldController {
 	@Autowired
 	private TokenGoldService tokenGoldService;
-	
+	@Autowired
+	private UserService userService;
+
 	@PostMapping("/buy")
 	public ResponseEntity<?> buyTokenGold(@RequestParam double amount,@RequestBody BuyGoldDTO buyGoldDTO) throws RazorpayException{
-		long userId=buyGoldDTO.getUserId();
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	    String username = authentication.getName();
+	    long userId=userService.getUserIdByUsername(username);
 		BigDecimal grams=buyGoldDTO.getGrams();
 		Order order=tokenGoldService.buyGold(userId,amount,grams);
 		return ResponseEntity.ok().body(order.get("id"));
 	}
-	
+
 	@PostMapping("/redeem")
     public ResponseEntity<?> redeemTokenGold(@RequestBody RedeemRequest redeemRequest) {
         try {
@@ -43,7 +48,7 @@ public class TokenGoldController {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsPrinciple userDetails = (UserDetailsPrinciple) authentication.getPrincipal();
             // You may need to add getUserId() to your UserDetailsPrinciple class
-            long userId = userDetails.getId(); 
+            long userId = userDetails.getId();
 
             // Call the service to handle the redemption.
             String txHash = tokenGoldService.redeemTokensForUser(userId, redeemRequest);
